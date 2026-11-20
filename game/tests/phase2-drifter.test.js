@@ -60,7 +60,7 @@ test('drifter steals before a shade hit and flees for 240 ticks', () => {
 
 test('pulse makes a chasing drifter flee without stealing', () => {
   const simulation = makeSimulation({
-    player: { carried: 1 },
+    player: { carried: tuning.pulse_cost },
     drifters: [{ id: 'D1', pos: [2, 0, 0], state: 'chase' }],
   });
   const events = simulation.step({ pulse: true });
@@ -74,7 +74,7 @@ test('pulse makes a chasing drifter flee without stealing', () => {
 
 test('pulse makes a fleeing drifter drop every stolen mote and shortens removal to 120 ticks', () => {
   const simulation = makeSimulation({
-    player: { carried: 1 },
+    player: { carried: tuning.pulse_cost },
     drifters: [{ id: 'D1', pos: [2, 0, 0], state: 'flee', stolen: 3, state_ticks_left: 200 }],
   });
   const events = simulation.step({ pulse: true });

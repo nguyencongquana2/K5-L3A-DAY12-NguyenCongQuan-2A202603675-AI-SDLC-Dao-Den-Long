@@ -58,6 +58,15 @@ function defaultShades(rng) {
   }));
 }
 
+function configMotes(config) {
+  return config.moteSpawnPoints.map((pos, index) => ({
+    id: `M${index + 1}`,
+    pos: copyVec(pos),
+    kind: 'random',
+    ttlTicks: null,
+  }));
+}
+
 /** Deterministic gameplay core; rendering and wall-clock time stay outside. */
 export class Simulation {
   constructor({ seed = 1, tuning, scenario = {}, contractVersion = '1.0', night = 1 }) {
@@ -79,6 +88,10 @@ export class Simulation {
     this.score = 0;
     this.endBonusApplied = false;
     this.dropSequence = 0;
+    this.shadeSequence = 0;
+    this.drifterSequence = 0;
+    this.randomShadesEnabled = true;
+    this.randomDriftersEnabled = true;
     this.inputPrevious = { jump: false, interact: false, pulse: false, dash: false, pause: false };
     this.player = {
       pos: [0, 0, 0],
@@ -94,7 +107,14 @@ export class Simulation {
       dashTicks: 0,
       dashCooldownTicks: 0,
       dashDirection: [0, 1],
+      launchLocked: false,
+      launchVelocity: [0, 0],
     };
+    if (this.nightConfig?.start) {
+      this.player.pos = copyVec(this.nightConfig.start.pos);
+      this.player.facing = [this.nightConfig.start.facing[0], this.nightConfig.start.facing[2]];
+    }
+    this.respawnPosition = copyVec(this.player.pos);
     this.lanterns = this.nightConfig
       ? this.nightConfig.lanterns.map((lantern) => ({
         id: lantern.id,
@@ -103,15 +123,16 @@ export class Simulation {
         lit: false,
       }))
       : defaultLanterns(tuning.lantern_count_night1);
-    this.motes = defaultMotes(this.rng);
-    this.shades = defaultShades(this.rng);
+    this.motes = this.nightConfig ? configMotes(this.nightConfig) : defaultMotes(this.rng);
+    this.shades = this.nightConfig ? [] : defaultShades(this.rng);
     this.drifters = [];
     this.charms = contractVersion === '1.1'
       ? this.nightConfig.charms.map((charm) => ({ ...charm, available: true, respawnTicks: 0 }))
       : [];
     this.windEnabled = contractVersion === '1.1' && night === 3;
     this.wind = { active: false, warning: false, dirDeg: 0, cycle: 0 };
-    this.initialDurationS = tuning.night1_duration_s;
+    this.initialDurationS = tuning[`night${night}_duration_s`];
+    assert(Number.isFinite(this.initialDurationS) && this.initialDurationS > 0, `night${night}_duration_s must be positive`);
 
     this.applyScenario(scenario);
   }
@@ -135,6 +156,8 @@ export class Simulation {
     for (const flag of randomFlags) {
       if (scenario[flag] !== undefined) assert(typeof scenario[flag] === 'boolean', `${flag} must be boolean`);
     }
+    if (scenario.random_shades !== undefined) this.randomShadesEnabled = scenario.random_shades;
+    if (scenario.random_drifters !== undefined) this.randomDriftersEnabled = scenario.random_drifters;
     if (scenario.player !== undefined) {
       assert(scenario.player && typeof scenario.player === 'object', 'scenario.player must be an object');
       const allowedPlayerFields = this.contractVersion === '1.1'
@@ -359,7 +382,7 @@ export class Simulation {
       if (this.contractVersion !== '1.1' || shade.stateTicksLeft <= 0) continue;
       shade.stateTicksLeft -= 1;
       shade.stunTicks = shade.stateTicksLeft;
-      if (shade.stateTicksLeft === 0 && shade.state === 'stunned') shade.state = 'chase';
+      if (shade.stateTicksLeft === 0 && ['stunned', 'spawning', 'recoil'].includes(shade.state)) shade.state = 'chase';
     }
     for (const mote of this.motes) {
       if (Number.isInteger(mote.ttlTicks) && mote.ttlTicks > 0) mote.ttlTicks -= 1;
@@ -388,6 +411,7 @@ export class Simulation {
       this.updateShades(events, false);
       this.resolveDrifterContacts(events);
       this.resolveShadeContacts(events);
+      this.spawnScheduledEntities();
     } else {
       this.updateShades(events);
     }
@@ -431,11 +455,16 @@ export class Simulation {
       events.push({ name: 'dash', data: {} });
     }
 
+    const previousX = this.player.pos[0];
+    const previousZ = this.player.pos[2];
     const playerSpeed = this.player.charmTicks > 0 ? CHARM_SPEED : this.tuning.player_speed;
     if (this.player.dashTicks > 0) {
       this.player.velocityX = this.player.dashDirection[0] * this.tuning.dash_speed;
       this.player.velocityZ = this.player.dashDirection[1] * this.tuning.dash_speed;
       this.player.dashTicks -= 1;
+    } else if (this.player.launchLocked) {
+      this.player.velocityX = this.player.launchVelocity[0];
+      this.player.velocityZ = this.player.launchVelocity[1];
     } else {
       this.player.velocityX = worldX * playerSpeed;
       this.player.velocityZ = worldZ * playerSpeed;
@@ -448,19 +477,99 @@ export class Simulation {
     this.player.pos[0] += this.player.velocityX / TICK_RATE;
     this.player.pos[2] += this.player.velocityZ / TICK_RATE;
 
-    const groundRadius = Math.hypot(this.player.pos[0], this.player.pos[2]);
-    if (!this.tuning.fall_enabled && groundRadius > ISLAND_RADIUS) {
-      this.player.pos[0] = (this.player.pos[0] / groundRadius) * ISLAND_RADIUS;
-      this.player.pos[2] = (this.player.pos[2] / groundRadius) * ISLAND_RADIUS;
+    if (!this.nightConfig && !this.tuning.fall_enabled) {
+      const groundRadius = Math.hypot(this.player.pos[0], this.player.pos[2]);
+      if (groundRadius > ISLAND_RADIUS) {
+        this.player.pos[0] = (this.player.pos[0] / groundRadius) * ISLAND_RADIUS;
+        this.player.pos[2] = (this.player.pos[2] / groundRadius) * ISLAND_RADIUS;
+      }
     }
 
-    if (jump && this.player.pos[1] <= 0) this.player.velocityY = JUMP_SPEED;
+    const ground = this.groundHeightAt(this.player.pos[0], this.player.pos[2], this.player.pos[1]);
+    if (ground !== null && ground > this.player.pos[1] + 0.55) {
+      this.player.pos[0] = previousX;
+      this.player.pos[2] = previousZ;
+    }
+
+    const standingGround = this.groundHeightAt(this.player.pos[0], this.player.pos[2], this.player.pos[1]);
+    const grounded = standingGround !== null && Math.abs(this.player.pos[1] - standingGround) < 0.05 && this.player.velocityY <= 0;
+    if (grounded) this.tryLaunchPad();
+    if (jump && grounded && !this.player.launchLocked) this.player.velocityY = JUMP_SPEED;
     this.player.velocityY -= GRAVITY / TICK_RATE;
     this.player.pos[1] += this.player.velocityY / TICK_RATE;
-    if (this.player.pos[1] <= 0) {
-      this.player.pos[1] = 0;
+    const landingGround = this.groundHeightAt(this.player.pos[0], this.player.pos[2], this.player.pos[1] + 0.3);
+    if (landingGround !== null && this.player.pos[1] <= landingGround && this.player.velocityY <= 0) {
+      this.player.pos[1] = landingGround;
       this.player.velocityY = 0;
+      this.player.launchLocked = false;
     }
+
+    if (this.player.pos[1] < -8) {
+      this.handleFall(events);
+    }
+  }
+
+  groundHeightAt(x, z, maxY = Infinity) {
+    if (!this.nightConfig) {
+      return Math.hypot(x, z) <= ISLAND_RADIUS ? 0 : null;
+    }
+    if (this.night === 1) return Math.hypot(x, z) <= 40 ? 0 : null;
+    if (this.night === 2) {
+      const onIsland = this.nightConfig.terrain.islands.some((island) =>
+        Math.hypot(x - island.center[0], z - island.center[2]) <= island.radius
+      );
+      const onBridge = x >= 26 && x <= 44 && z >= -2 && z <= 2;
+      return onIsland || onBridge ? 0 : null;
+    }
+
+    const radius = Math.hypot(x, z);
+    if (radius > 45) return null;
+    const surfaces = [0];
+    const angleDeg = ((Math.atan2(z, x) * 180) / Math.PI + 360) % 360;
+    for (const rampAngle of [30, 150]) {
+      const angularDistance = Math.abs((((angleDeg - rampAngle + 180) % 360) + 360) % 360 - 180);
+      const lateralDistance = radius * Math.sin((angularDistance * Math.PI) / 180);
+      if (radius >= 24 && radius <= 30 && Math.abs(lateralDistance) <= 1.5) {
+        surfaces.push(((30 - radius) / 6) * 3);
+      }
+    }
+    if (z > 0 && radius >= 12 && radius <= 24) surfaces.push(3);
+    if (radius <= 8) surfaces.push(6);
+    const candidates = surfaces.filter((height) => height <= maxY + 0.55);
+    return candidates.length ? Math.max(...candidates) : null;
+  }
+
+  tryLaunchPad() {
+    if (!this.nightConfig || this.player.launchLocked) return;
+    const pad = this.nightConfig.terrain.launchPads.find((item) => distanceXZ(this.player.pos, item.pos) <= item.radius);
+    if (!pad) return;
+    let directionX;
+    let directionZ;
+    if (pad.target) {
+      directionX = pad.target[0] - this.player.pos[0];
+      directionZ = pad.target[2] - this.player.pos[2];
+      const length = Math.hypot(directionX, directionZ) || 1;
+      directionX /= length;
+      directionZ /= length;
+    } else {
+      [directionX, , directionZ] = pad.direction;
+    }
+    this.player.velocityY = pad.velocityY;
+    this.player.launchVelocity = [directionX * pad.horizontalSpeed, directionZ * pad.horizontalSpeed];
+    this.player.launchLocked = true;
+  }
+
+  handleFall(events) {
+    const lost = this.player.carried;
+    this.player.carried = 0;
+    this.player.flames = Math.max(0, this.player.flames - 1);
+    this.player.invulnTicks = secondsToTicks(this.tuning.invuln_s);
+    this.player.pos = copyVec(this.respawnPosition);
+    this.player.velocityX = 0;
+    this.player.velocityY = 0;
+    this.player.velocityZ = 0;
+    this.player.launchLocked = false;
+    events.push({ name: 'player_hit', data: { by: 'fall', flames: this.player.flames, dropped: 0, lost } });
   }
 
   collectMotes(events) {
@@ -500,6 +609,57 @@ export class Simulation {
     }
     this.wind.active = activeCycle > 0;
     this.wind.warning = warningCycle > 0;
+  }
+
+  spawnScheduledEntities() {
+    const nextTick = this.simTick + 1;
+    const schedule = this.nightConfig.shadeSchedule;
+    const activeShades = this.shades.filter((shade) => shade.state !== 'removed').length;
+    let shadeCount = 0;
+    if (!this.randomShadesEnabled) {
+      shadeCount = 0;
+    } else if (schedule.firstTick !== undefined && nextTick === schedule.firstTick) {
+      shadeCount = schedule.firstCount;
+    } else {
+      const firstTick = schedule.firstTick ?? schedule.intervalTicks;
+      if (nextTick >= firstTick && (nextTick - firstTick) % schedule.intervalTicks === 0) shadeCount = 1;
+    }
+    shadeCount = Math.min(shadeCount, schedule.maxAlive - activeShades);
+    for (let index = 0; index < shadeCount; index += 1) {
+      let points = this.nightConfig.shadeSpawnPoints;
+      if (this.night === 1) {
+        const distant = points.filter((pos) => distanceXZ(pos, this.player.pos) >= 15);
+        if (distant.length) points = distant;
+      }
+      const pos = points[Math.floor(this.rng.range(0, points.length))];
+      this.shadeSequence += 1;
+      this.shades.push({
+        id: `S${this.shadeSequence}`,
+        pos: copyVec(pos),
+        state: 'spawning',
+        stunTicks: 0,
+        stateTicksLeft: TICK_RATE,
+      });
+    }
+
+    if (this.randomDriftersEnabled && this.night >= 2 && nextTick % 1200 === 0) {
+      const activeDrifters = this.drifters.filter((drifter) => drifter.state !== 'removed').length;
+      if (activeDrifters < 2) {
+        const points = this.nightConfig.shadeSpawnPoints;
+        const pos = points[Math.floor(this.rng.range(0, points.length))];
+        const idleAngle = this.rng.range(0, Math.PI * 2);
+        this.drifterSequence += 1;
+        this.drifters.push({
+          id: `D${this.drifterSequence}`,
+          pos: copyVec(pos),
+          state: 'idle',
+          stolen: 0,
+          stateTicksLeft: 0,
+          hasStolen: false,
+          idleDirection: [Math.cos(idleAngle), Math.sin(idleAngle)],
+        });
+      }
+    }
   }
 
   collectCharms(events) {
@@ -637,6 +797,7 @@ export class Simulation {
 
   updateShades(events, resolveContacts = true) {
     for (const shade of this.shades) {
+      if (this.contractVersion === '1.1' && shade.state === 'spawning') continue;
       if (shade.stunTicks > 0) {
         if (this.contractVersion !== '1.1') shade.stunTicks -= 1;
         shade.state = 'stunned';

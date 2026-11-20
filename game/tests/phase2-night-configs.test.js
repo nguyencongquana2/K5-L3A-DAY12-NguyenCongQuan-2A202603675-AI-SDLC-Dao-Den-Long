@@ -34,7 +34,8 @@ test('Night 1 uses the standard island, lanterns, spawn rings and shade schedule
 
 test('Night 2 defines both islands, bridge, launch pads and per-island spawn points', () => {
   const config = getNightConfig(2);
-  assert.equal(config.start, null, 'the supplied ticket does not define the Night 2 player start');
+  assert.deepEqual(config.start.pos, [0, 0, 0]);
+  assert.equal(config.start.assumed, true);
   assert.deepEqual(config.terrain.islands.map(({ center, radius }) => ({ center, radius })), [
     { center: [0, 0, 0], radius: 28 },
     { center: [70, 0, 0], radius: 28 },
@@ -51,7 +52,8 @@ test('Night 2 defines both islands, bridge, launch pads and per-island spawn poi
 
 test('Night 3 defines three levels, ramps, tower, wind and the standard entities', () => {
   const config = getNightConfig(3);
-  assert.equal(config.start, null, 'the supplied ticket does not define the Night 3 player start');
+  assert.deepEqual(config.start.pos, [0, 0, -30]);
+  assert.equal(config.start.assumed, true);
   assert.deepEqual(config.terrain.tiers.map((tier) => tier.y), [0, 3, 6]);
   assert.deepEqual(config.terrain.ramps.map((ramp) => ramp.angleDeg), [30, 150]);
   assert.deepEqual(config.terrain.tower, { pos: [0, 6, 0], radius: 2, height: 8, climbable: false });

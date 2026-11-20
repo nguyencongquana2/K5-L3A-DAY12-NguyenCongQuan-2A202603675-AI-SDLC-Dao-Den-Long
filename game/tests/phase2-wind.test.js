@@ -76,6 +76,6 @@ test('wind_enabled false disables warning, activation and force', () => {
   for (let tick = 0; tick < 1900; tick += 1) simulation.step({});
   assert.equal(simulation.wind.warning, false);
   assert.equal(simulation.wind.active, false);
-  assert.deepEqual(simulation.player.pos, [0, 0, 0]);
+  assert.deepEqual(simulation.player.pos, [0, 0, -30]);
   assert.deepEqual(simulation.snapshot().wind, { active: false, dir_deg: 0 });
 });

@@ -26,6 +26,7 @@ test('CLI writes snapshot tick 0 and a mandatory final end record', async (conte
   const records = (await readFile(output, 'utf8')).trim().split('\n').map(JSON.parse);
   assert.equal(records[0].type, 'snapshot');
   assert.equal(records[0].tick, 0);
+  assert.deepEqual(records[1], { type: 'event', tick: 0, name: 'night_start', data: { night: 1 } });
   assert.deepEqual(records.at(-1), { type: 'end', ticks: 2, state: 'playing', score: 0 });
 });
 
@@ -67,5 +68,5 @@ test('scenario construction emits no events and does not award score', async (co
   const records = (await readFile(output, 'utf8')).trim().split('\n').map(JSON.parse);
   assert.equal(records[0].score, 0);
   assert.equal(records[0].lanterns[0].lit, true);
-  assert.equal(records.some((record) => record.type === 'event'), false);
+  assert.equal(records.some((record) => record.type === 'event' && record.name !== 'night_start'), false);
 });

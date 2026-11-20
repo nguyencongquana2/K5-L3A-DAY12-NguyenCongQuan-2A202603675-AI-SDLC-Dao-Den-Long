@@ -62,7 +62,10 @@ export async function run(argv) {
     contractVersion: contract.contract_version,
     night: args.night,
   });
-  const records = [simulation.snapshot()];
+  const records = [
+    simulation.snapshot(),
+    { type: 'event', tick: 0, name: 'night_start', data: { night: args.night } },
+  ];
 
   for (let step = 0; step < args.ticks && simulation.state === 'playing'; step += 1) {
     const events = simulation.step(timeline.at(simulation.tick));

@@ -51,7 +51,7 @@ const night2Centers = [
 
 const night2 = {
   night: 2,
-  start: null,
+  start: { pos: [0, 0, 0], facing: [0, 0, 1], assumed: true },
   terrain: {
     islands: night2Centers.map((center, index) => ({ id: index === 0 ? 'A' : 'B', center, radius: 28 })),
     bridges: [{ id: 'bridge-A-B', x: [26, 44], z: [-2, 2], y: 0, rails: false }],
@@ -85,7 +85,7 @@ const night2 = {
 
 const night3 = {
   night: 3,
-  start: null,
+  start: { pos: [0, 0, -30], facing: [0, 0, 1], assumed: true },
   terrain: {
     islands: [{ id: 'A', center: [0, 0, 0], radius: 45 }],
     bridges: [],

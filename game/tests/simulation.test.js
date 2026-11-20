@@ -40,7 +40,7 @@ test('nearby motes are collected automatically up to capacity', () => {
   const simulation = makeSimulation({
     random_motes: false,
     random_shades: false,
-    motes: Array.from({ length: 8 }, () => [0, 0, 0.5]),
+    motes: Array.from({ length: tuning.carry_capacity + 2 }, () => [0, 0, 0.5]),
   });
   const events = simulation.step({});
   assert.equal(simulation.player.carried, tuning.carry_capacity);
@@ -50,7 +50,7 @@ test('nearby motes are collected automatically up to capacity', () => {
 
 test('interact deposits motes, lights the lantern, and wins when all are lit', () => {
   const simulation = makeSimulation({
-    player: { pos: [0, 0, 0], carried: 3, flames: 3 },
+    player: { pos: [0, 0, 0], carried: tuning.lantern_cost, flames: 3 },
     random_motes: false,
     random_shades: false,
     lanterns: [
@@ -70,7 +70,7 @@ test('interact deposits motes, lights the lantern, and wins when all are lit', (
 
 test('pulse consumes one mote, pushes and stuns shades in range', () => {
   const simulation = makeSimulation({
-    player: { pos: [0, 0, 0], carried: 2, flames: 3 },
+    player: { pos: [0, 0, 0], carried: tuning.pulse_cost + 1, flames: 3 },
     random_motes: false,
     random_shades: false,
     shades: [{ id: 'S-test', pos: [2, 0, 0] }]
