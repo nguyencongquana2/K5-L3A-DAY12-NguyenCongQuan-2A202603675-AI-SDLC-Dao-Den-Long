@@ -1,3 +1,4 @@
+/** Small cross-platform PRNG used by both browser and headless simulation. */
 export class SeededRng {
   constructor(seed) {
     this.state = Number(seed) >>> 0;

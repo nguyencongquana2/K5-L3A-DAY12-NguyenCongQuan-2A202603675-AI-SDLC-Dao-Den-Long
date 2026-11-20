@@ -4,7 +4,7 @@ import test from 'node:test';
 import { Simulation } from '../src/core/simulation.js';
 import { validateInputs } from '../src/headless/inputs.js';
 
-const contract = JSON.parse(await readFile(new URL('../game.contract.json', import.meta.url), 'utf8'));
+const contract = JSON.parse(await readFile(new URL('../../game.contract.json', import.meta.url), 'utf8'));
 const tuning = contract.tuning;
 
 function makeSimulation(scenario = {}) {

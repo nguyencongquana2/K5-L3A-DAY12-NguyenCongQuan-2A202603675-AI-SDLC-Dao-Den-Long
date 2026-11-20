@@ -1,5 +1,7 @@
 # Changelog
 
+Project code and generated documentation live under `game/`.
+
 ## Phase 1
 
 - Added deterministic 60 Hz gameplay simulation and Test Contract v1.0 CLI.

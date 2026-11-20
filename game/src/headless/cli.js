@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { Simulation } from '../core/simulation.js';
 import { InputTimeline, validateInputs } from './inputs.js';
 
-const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 
 function parseArgs(argv) {
   const args = {};
@@ -47,7 +47,7 @@ async function readJson(path, label, fallback) {
 
 export async function run(argv) {
   const args = parseArgs(argv);
-  const contract = JSON.parse(await readFile(resolve(projectRoot, 'game.contract.json'), 'utf8'));
+  const contract = JSON.parse(await readFile(resolve(repoRoot, 'game.contract.json'), 'utf8'));
   const scenario = await readJson(args.scenario, 'invalid scenario file', {});
   const inputDocument = await readJson(args.inputs, 'invalid inputs file', { frames: [] });
   const frames = validateInputs(inputDocument);

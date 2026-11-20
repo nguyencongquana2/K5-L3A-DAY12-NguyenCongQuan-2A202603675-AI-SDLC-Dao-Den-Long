@@ -1,3 +1,4 @@
+// Input state persists between sparse frames exactly as Test Contract v1.0 defines.
 const BOOLEAN_FIELDS = ['jump', 'interact', 'pulse', 'dash'];
 const ALLOWED_FIELDS = new Set(['tick', 'move', 'cam_yaw_deg', ...BOOLEAN_FIELDS]);
 

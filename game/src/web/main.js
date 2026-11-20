@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import contract from '../../game.contract.json';
+import contract from '../../../game.contract.json';
 import { ISLAND_RADIUS, Simulation, TICK_RATE } from '../core/simulation.js';
 import './style.css';
 

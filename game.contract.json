@@ -1,9 +1,9 @@
 {
   "contract_version": "1.0",
   "team": "2A202603675-nguyen-cong-quan",
-  "build_cmd": "npm ci",
-  "run_cmd": "npm run dev",
-  "headless_cmd": "node src/headless/cli.js",
+  "build_cmd": "npm --prefix game ci",
+  "run_cmd": "npm --prefix game run dev",
+  "headless_cmd": "node game/src/headless/cli.js",
   "tuning": {
     "player_speed": 6,
     "carry_capacity": 6,

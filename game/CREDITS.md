@@ -1,5 +1,7 @@
 # Credits
 
+Licensing details for this game are in [`LICENSE`](LICENSE).
+
 - Game concept, characters, and setting: Đảo Đèn Lồng Day 12 AI SDLC Lab.
 - Programming and original procedural visuals: Nguyen Cong Quan with OpenAI Codex assistance.
 - 3D runtime: [Three.js](https://threejs.org/), MIT License.

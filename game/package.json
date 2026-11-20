@@ -1,6 +1,8 @@
 {
   "name": "dao-den-long",
   "version": "1.0.0",
+  "description": "Đảo Đèn Lồng — deterministic 3D adventure game",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {

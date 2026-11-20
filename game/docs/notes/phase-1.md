@@ -1,5 +1,7 @@
 # Phase 1 — requirements, assumptions, and plan
 
+This project-owned note is stored with the game under `game/docs`.
+
 ## Acceptance criteria
 
 | Requirement | Verifiable result | Planned evidence |
@@ -25,6 +27,11 @@
 - End bonuses (`per_second_left`, `per_flame_left`) are awarded only on a win, once.
 - When events share a tick, player movement/collection and player actions resolve before shade movement/hits, then the terminal condition is checked.
 
+## Phase 1 tutor confirmation
+
+- The Phase 1 brief and Test Contract do not define which resource `pulse_cost` consumes, so choosing and documenting the behavior is valid.
+- The tutor recommended consuming `player.carried`, because motes represent light while flames represent health. This matches the implementation: `pulse_cost` is 1; when `carried < pulse_cost`, pulse does not activate, consume a resource, or emit an event.
+
 ## Tuning rationale
 
 The island has a 38 m playable radius. A speed of 6 m/s keeps traversal short. Five lanterns cost 15 motes total; the default level contains more than 15 so recovery after hits is possible. Shade speed is half the player's speed, making pursuit readable while still dangerous near obstacles.
@@ -38,7 +45,7 @@ The island has a 38 m playable radius. A speed of 6 m/s keeps traversal short. F
 ## Phase evaluation
 
 - **Achieved:** deterministic contract CLI, 13 automated tests, byte-identical repeat runs, production web build, five-lantern Night 1 loop, procedural 3D scene, HUD, win/loss, and replay implementation.
-- **Regression check:** `npm run verify` reruns all core and CLI checks; GitHub Actions repeats verification and production build on push.
+- **Regression check:** `npm --prefix game run verify` reruns all core and CLI checks; GitHub Actions repeats verification and production build on push.
 - **AI/tool mistakes found:** the first visual pass rendered the Vietnamese title badly; headless screenshot review caught it and the font/size were corrected. The initial Vite version had a high-severity dev-server advisory; `npm audit` found it and Vite was upgraded to 7.3.8, leaving zero known vulnerabilities. A manual keyboard check found A/D visually reversed because the camera's screen-right vector is negative local X; the web key mapping was inverted without changing the Contract-defined core movement formula.
 - **Harness change:** added a short `AGENTS.md` completion gate, byte-for-byte determinism script, and CI so gameplay changes cannot rely on memory alone.
 - **Remaining gap:** Chrome headless proves WebGL, menu, scene, and HUD rendering, but a human keyboard/mouse playthrough and video are still required before tagging Phase 1.

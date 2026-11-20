@@ -3,11 +3,11 @@ import { readFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 
-const root = resolve(import.meta.dirname, '..');
-const scenario = resolve(root, 'tests/fixtures/determinism-scenario.json');
-const inputs = resolve(root, 'tests/fixtures/determinism-inputs.json');
-const outputA = resolve(root, 'docs/proof/phase-1/determinism-a.jsonl');
-const outputB = resolve(root, 'docs/proof/phase-1/determinism-b.jsonl');
+const gameRoot = resolve(import.meta.dirname, '..');
+const scenario = resolve(gameRoot, 'tests/fixtures/determinism-scenario.json');
+const inputs = resolve(gameRoot, 'tests/fixtures/determinism-inputs.json');
+const outputA = resolve(gameRoot, 'docs/proof/phase-1/determinism-a.jsonl');
+const outputB = resolve(gameRoot, 'docs/proof/phase-1/determinism-b.jsonl');
 
 function run(output) {
   const result = spawnSync(process.execPath, [
@@ -19,7 +19,7 @@ function run(output) {
     '--ticks', '120',
     '--snapshot-every', '10',
     '--out', output,
-  ], { cwd: root, encoding: 'utf8' });
+  ], { cwd: gameRoot, encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
 }
 

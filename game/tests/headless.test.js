@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 
+// Integration tests execute the public CLI, not private implementation hooks.
 const root = resolve(import.meta.dirname, '..');
 
 function execute(args) {

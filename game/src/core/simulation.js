@@ -53,6 +53,7 @@ function defaultShades(rng) {
   }));
 }
 
+/** Deterministic gameplay core; rendering and wall-clock time stay outside. */
 export class Simulation {
   constructor({ seed = 1, tuning, scenario = {} }) {
     assert(tuning && typeof tuning === 'object', 'tuning is required');
