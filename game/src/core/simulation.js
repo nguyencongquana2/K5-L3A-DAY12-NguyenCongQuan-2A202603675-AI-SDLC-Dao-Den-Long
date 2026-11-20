@@ -102,7 +102,7 @@ export class Simulation {
       ? getNightConfig(night).charms.map((charm) => ({ ...charm, available: true, respawnTicks: 0 }))
       : [];
     this.windEnabled = contractVersion === '1.1' && night === 3;
-    this.wind = { active: false, dirDeg: 0 };
+    this.wind = { active: false, warning: false, dirDeg: 0, cycle: 0 };
     this.initialDurationS = tuning.night1_duration_s;
 
     this.applyScenario(scenario);
@@ -368,6 +368,8 @@ export class Simulation {
       if (drifter.stateTicksLeft === 0) drifter.state = 'removed';
     }
 
+    this.updateWindState();
+
     this.movePlayer(current, rising('jump'), rising('dash'), events);
     this.collectMotes(events);
     this.collectCharms(events);
@@ -430,6 +432,11 @@ export class Simulation {
       this.player.velocityX = worldX * playerSpeed;
       this.player.velocityZ = worldZ * playerSpeed;
     }
+    if (this.wind.active) {
+      const windAngle = (this.wind.dirDeg * Math.PI) / 180;
+      this.player.velocityX += Math.cos(windAngle) * 2;
+      this.player.velocityZ += Math.sin(windAngle) * 2;
+    }
     this.player.pos[0] += this.player.velocityX / TICK_RATE;
     this.player.pos[2] += this.player.velocityZ / TICK_RATE;
 
@@ -463,6 +470,28 @@ export class Simulation {
       }
     }
     this.motes = remaining;
+  }
+
+  updateWindState() {
+    this.wind.active = false;
+    this.wind.warning = false;
+    if (!this.windEnabled) return;
+
+    const intervalTicks = 30 * TICK_RATE;
+    const warningTicks = 2 * TICK_RATE;
+    const activeTicks = 5 * TICK_RATE;
+    const offset = this.simTick % intervalTicks;
+    const completedCycles = Math.floor(this.simTick / intervalTicks);
+    const activeCycle = completedCycles >= 1 && offset < activeTicks ? completedCycles : 0;
+    const warningCycle = offset >= intervalTicks - warningTicks ? completedCycles + 1 : 0;
+    const targetCycle = activeCycle || warningCycle;
+
+    if (targetCycle > 0 && this.wind.cycle !== targetCycle) {
+      this.wind.cycle = targetCycle;
+      this.wind.dirDeg = this.rng.range(0, 360);
+    }
+    this.wind.active = activeCycle > 0;
+    this.wind.warning = warningCycle > 0;
   }
 
   collectCharms(events) {
