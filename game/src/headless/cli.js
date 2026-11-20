@@ -52,7 +52,12 @@ export async function run(argv) {
   const inputDocument = await readJson(args.inputs, 'invalid inputs file', { frames: [] });
   const frames = validateInputs(inputDocument);
   const timeline = new InputTimeline(frames);
-  const simulation = new Simulation({ seed: args.seed, tuning: contract.tuning, scenario });
+  const simulation = new Simulation({
+    seed: args.seed,
+    tuning: contract.tuning,
+    scenario,
+    contractVersion: contract.contract_version,
+  });
   const records = [simulation.snapshot()];
 
   for (let step = 0; step < args.ticks && simulation.state === 'playing'; step += 1) {

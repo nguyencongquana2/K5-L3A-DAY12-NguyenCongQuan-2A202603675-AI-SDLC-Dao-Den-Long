@@ -67,4 +67,5 @@ Work that does not depend on these values may proceed. Contract/tuning completio
 | Requirements lock | Acceptance matrix created; missing exact tables recorded | Phase 1 baseline remains green | No values invented |
 | Clock and pause foundation | Wall tick, simulation tick, paused snapshots and pause/resume events implemented | 16/16 tests; Phase 1 determinism remains 7,884 identical bytes; production build passes | No tuning changes |
 | Night configuration | Standard terrain, lantern, spawn-point, launch-pad, charm, drifter and wind data captured for all three Nights | 21/21 tests; Phase 1 determinism remains 7,884 identical bytes | Unspecified Night 2/3 starts and first recurring shade tick remain unset |
+| Standard score | Contract 1.1 scores deposited motes, pulse targets, lanterns and win bonus using the Ticket-02 formula | 24/24 tests; Phase 1 determinism remains 7,884 identical bytes | Contract 1.0 scoring remains isolated for regression |
 

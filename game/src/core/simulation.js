@@ -56,11 +56,13 @@ function defaultShades(rng) {
 
 /** Deterministic gameplay core; rendering and wall-clock time stay outside. */
 export class Simulation {
-  constructor({ seed = 1, tuning, scenario = {} }) {
+  constructor({ seed = 1, tuning, scenario = {}, contractVersion = '1.0' }) {
     assert(tuning && typeof tuning === 'object', 'tuning is required');
     assert(scenario && typeof scenario === 'object' && !Array.isArray(scenario), 'scenario must be an object');
+    assert(['1.0', '1.1'].includes(contractVersion), 'contractVersion must be 1.0 or 1.1');
 
     this.tuning = structuredClone(tuning);
+    this.contractVersion = contractVersion;
     this.rng = new SeededRng(seed);
     this.seed = Number(seed);
     this.tick = 0;
@@ -183,6 +185,10 @@ export class Simulation {
     return this.paused ? 'paused' : this.state;
   }
 
+  get usesPhase2Scoring() {
+    return this.contractVersion === '1.1';
+  }
+
   step(input = {}) {
     if (this.state !== 'playing') return [];
 
@@ -269,7 +275,7 @@ export class Simulation {
         distanceXZ(this.player.pos, mote.pos) <= this.tuning.pickup_radius
       ) {
         this.player.carried += 1;
-        this.score += this.tuning.score.per_mote;
+        if (!this.usesPhase2Scoring) this.score += this.tuning.score.per_mote;
         events.push({ name: 'mote_picked', data: { carried: this.player.carried } });
       } else {
         remaining.push(mote);
@@ -289,6 +295,7 @@ export class Simulation {
     if (amount <= 0) return;
     this.player.carried -= amount;
     lantern.deposited += amount;
+    if (this.usesPhase2Scoring) this.score += amount * this.tuning.score.per_mote;
     events.push({ name: 'deposit', data: { lantern_id: lantern.id, amount, deposited: lantern.deposited } });
     if (lantern.deposited >= this.tuning.lantern_cost) {
       lantern.lit = true;
