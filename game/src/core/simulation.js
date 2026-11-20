@@ -43,6 +43,8 @@ function defaultMotes(rng) {
   return Array.from({ length: 24 }, (_, index) => ({
     id: `M${index + 1}`,
     pos: randomGroundPosition(rng),
+    kind: 'random',
+    ttlTicks: null,
   }));
 }
 
@@ -52,6 +54,7 @@ function defaultShades(rng) {
     pos: randomGroundPosition(rng, 18, 33),
     state: 'chase',
     stunTicks: 0,
+    stateTicksLeft: 0,
   }));
 }
 
@@ -98,6 +101,8 @@ export class Simulation {
     this.charms = contractVersion === '1.1'
       ? getNightConfig(night).charms.map((charm) => ({ ...charm, available: true, respawnTicks: 0 }))
       : [];
+    this.windEnabled = contractVersion === '1.1' && night === 3;
+    this.wind = { active: false, dirDeg: 0 };
     this.initialDurationS = tuning.night1_duration_s;
 
     this.applyScenario(scenario);
@@ -110,6 +115,8 @@ export class Simulation {
     if (this.contractVersion === '1.1') {
       allowedScenarioFields.add('random_drifters');
       allowedScenarioFields.add('drifters');
+      allowedScenarioFields.add('charms');
+      allowedScenarioFields.add('wind_enabled');
     }
     for (const field of Object.keys(scenario)) {
       assert(allowedScenarioFields.has(field), `unknown scenario field: ${field}`);
@@ -122,8 +129,11 @@ export class Simulation {
     }
     if (scenario.player !== undefined) {
       assert(scenario.player && typeof scenario.player === 'object', 'scenario.player must be an object');
+      const allowedPlayerFields = this.contractVersion === '1.1'
+        ? ['pos', 'carried', 'flames', 'invuln_ticks', 'dash_cd_ticks', 'pulse_cd_ticks', 'charm_ticks']
+        : ['pos', 'carried', 'flames'];
       for (const field of Object.keys(scenario.player)) {
-        assert(['pos', 'carried', 'flames'].includes(field), `unknown player field: ${field}`);
+        assert(allowedPlayerFields.includes(field), `unknown player field: ${field}`);
       }
       if (scenario.player.pos !== undefined) {
         validateVec(scenario.player.pos, 'scenario.player.pos');
@@ -137,6 +147,20 @@ export class Simulation {
         assert(Number.isInteger(scenario.player.flames) && scenario.player.flames >= 0, 'player.flames must be a non-negative integer');
         this.player.flames = scenario.player.flames;
       }
+      const counterFields = [
+        ['invuln_ticks', 'invulnTicks'],
+        ['dash_cd_ticks', 'dashCooldownTicks'],
+        ['pulse_cd_ticks', 'pulseCooldownTicks'],
+        ['charm_ticks', 'charmTicks'],
+      ];
+      for (const [scenarioField, playerField] of counterFields) {
+        if (scenario.player[scenarioField] === undefined) continue;
+        assert(
+          Number.isInteger(scenario.player[scenarioField]) && scenario.player[scenarioField] >= 0,
+          `player.${scenarioField} must be a non-negative integer`
+        );
+        this.player[playerField] = scenario.player[scenarioField];
+      }
     }
 
     if (scenario.time_left_s !== undefined) {
@@ -148,7 +172,7 @@ export class Simulation {
       assert(Array.isArray(scenario.motes), 'scenario.motes must be an array');
       this.motes = scenario.motes.map((pos, index) => {
         validateVec(pos, `scenario.motes[${index}]`);
-        return { id: `M${index + 1}`, pos: copyVec(pos) };
+        return { id: `M${index + 1}`, pos: copyVec(pos), kind: 'random', ttlTicks: null };
       });
     } else if (scenario.random_motes === false) {
       this.motes = [];
@@ -159,14 +183,30 @@ export class Simulation {
       const ids = new Set();
       this.shades = scenario.shades.map((shade, index) => {
         assert(shade && typeof shade === 'object', `scenario.shades[${index}] must be an object`);
+        const allowedShadeFields = this.contractVersion === '1.1'
+          ? ['id', 'pos', 'state', 'state_ticks_left']
+          : ['id', 'pos'];
         for (const field of Object.keys(shade)) {
-          assert(['id', 'pos'].includes(field), `unknown shade field: ${field}`);
+          assert(allowedShadeFields.includes(field), `unknown shade field: ${field}`);
         }
         validateVec(shade.pos, `scenario.shades[${index}].pos`);
         const id = shade.id ?? `S${index + 1}`;
+        const state = shade.state ?? 'chase';
+        const stateTicksLeft = shade.state_ticks_left ?? 0;
         assert(typeof id === 'string' && id.length > 0 && !ids.has(id), 'shade ids must be unique non-empty strings');
+        assert(
+          ['spawning', 'wander', 'chase', 'recoil', 'stunned'].includes(state),
+          `invalid shade state: ${state}`
+        );
+        assert(Number.isInteger(stateTicksLeft) && stateTicksLeft >= 0, 'shade.state_ticks_left must be a non-negative integer');
         ids.add(id);
-        return { id, pos: copyVec(shade.pos), state: 'chase', stunTicks: 0 };
+        return {
+          id,
+          pos: copyVec(shade.pos),
+          state,
+          stateTicksLeft,
+          stunTicks: state === 'stunned' ? stateTicksLeft : 0,
+        };
       });
     } else if (scenario.random_shades === false) {
       this.shades = [];
@@ -207,6 +247,31 @@ export class Simulation {
       });
     } else if (scenario.random_drifters === false) {
       this.drifters = [];
+    }
+
+    if (scenario.charms !== undefined) {
+      assert(Array.isArray(scenario.charms), 'scenario.charms must be an array');
+      const ids = new Set();
+      this.charms = scenario.charms.map((charm, index) => {
+        assert(charm && typeof charm === 'object', `scenario.charms[${index}] must be an object`);
+        for (const field of Object.keys(charm)) {
+          assert(['id', 'pos', 'available', 'respawn_ticks'].includes(field), `unknown charm field: ${field}`);
+        }
+        validateVec(charm.pos, `scenario.charms[${index}].pos`);
+        const id = charm.id ?? `C${index + 1}`;
+        const available = charm.available ?? true;
+        const respawnTicks = charm.respawn_ticks ?? 0;
+        assert(typeof id === 'string' && id.length > 0 && !ids.has(id), 'charm ids must be unique non-empty strings');
+        assert(typeof available === 'boolean', 'charm.available must be boolean');
+        assert(Number.isInteger(respawnTicks) && respawnTicks >= 0, 'charm.respawn_ticks must be a non-negative integer');
+        ids.add(id);
+        return { id, pos: copyVec(charm.pos), available, respawnTicks };
+      });
+    }
+
+    if (scenario.wind_enabled !== undefined) {
+      assert(typeof scenario.wind_enabled === 'boolean', 'wind_enabled must be boolean');
+      this.windEnabled = scenario.wind_enabled;
     }
 
     if (scenario.lanterns !== undefined) {
@@ -282,6 +347,16 @@ export class Simulation {
     if (this.player.pulseCooldownTicks > 0) this.player.pulseCooldownTicks -= 1;
     if (this.player.dashCooldownTicks > 0) this.player.dashCooldownTicks -= 1;
     if (this.player.charmTicks > 0) this.player.charmTicks -= 1;
+    for (const shade of this.shades) {
+      if (this.contractVersion !== '1.1' || shade.stateTicksLeft <= 0) continue;
+      shade.stateTicksLeft -= 1;
+      shade.stunTicks = shade.stateTicksLeft;
+      if (shade.stateTicksLeft === 0 && shade.state === 'stunned') shade.state = 'chase';
+    }
+    for (const mote of this.motes) {
+      if (Number.isInteger(mote.ttlTicks) && mote.ttlTicks > 0) mote.ttlTicks -= 1;
+    }
+    this.motes = this.motes.filter((mote) => mote.ttlTicks === null || mote.ttlTicks > 0);
     for (const charm of this.charms) {
       if (charm.available || charm.respawnTicks <= 0) continue;
       charm.respawnTicks -= 1;
@@ -443,6 +518,7 @@ export class Simulation {
       shade.pos[0] += dx * this.tuning.pulse_push_m;
       shade.pos[2] += dz * this.tuning.pulse_push_m;
       shade.stunTicks = secondsToTicks(this.tuning.pulse_stun_s);
+      shade.stateTicksLeft = shade.stunTicks;
       shade.state = 'stunned';
       stunnedIds.push(shade.id);
     }
@@ -460,7 +536,7 @@ export class Simulation {
           drifter.stateTicksLeft = 120;
           for (let index = 0; index < amount; index += 1) {
             this.dropSequence += 1;
-            this.motes.push({ id: `D${this.dropSequence}`, pos: copyVec(drifter.pos), kind: 'dropped' });
+            this.motes.push({ id: `D${this.dropSequence}`, pos: copyVec(drifter.pos), kind: 'dropped', ttlTicks: null });
           }
           drifterDropEvents.push({ name: 'drifter_drop', data: { drifter_id: drifter.id, amount } });
         }
@@ -525,7 +601,7 @@ export class Simulation {
   updateShades(events, resolveContacts = true) {
     for (const shade of this.shades) {
       if (shade.stunTicks > 0) {
-        shade.stunTicks -= 1;
+        if (this.contractVersion !== '1.1') shade.stunTicks -= 1;
         shade.state = 'stunned';
         continue;
       }
@@ -575,7 +651,7 @@ export class Simulation {
       }
       shade.pos[0] = lantern.pos[0] + dx * this.tuning.safe_radius;
       shade.pos[2] = lantern.pos[2] + dz * this.tuning.safe_radius;
-      shade.state = 'flee';
+      shade.state = this.contractVersion === '1.1' ? 'recoil' : 'flee';
     }
   }
 
@@ -595,6 +671,10 @@ export class Simulation {
           0,
           this.player.pos[2] + Math.sin(angle) * radius,
         ],
+        kind: 'dropped',
+        ttlTicks: Number.isFinite(this.tuning.dropped_mote_ttl_s)
+          ? secondsToTicks(this.tuning.dropped_mote_ttl_s)
+          : null,
       });
     }
     events.push({ name: 'player_hit', data: { by: 'shade', flames: this.player.flames, dropped } });
@@ -651,6 +731,8 @@ export class Simulation {
     };
     if (this.contractVersion === '1.1') {
       snapshot.night = this.night;
+      snapshot.wind = { active: this.wind.active, dir_deg: round3(this.wind.dirDeg) };
+      snapshot.player.invuln = this.player.invulnTicks > 0;
       snapshot.player.vel = vec([this.player.velocityX, this.player.velocityY, this.player.velocityZ]);
       snapshot.player.grounded = this.player.pos[1] === 0 && this.player.velocityY === 0;
       snapshot.player.dash_cd_s = round3(this.player.dashCooldownTicks / TICK_RATE);
@@ -669,6 +751,12 @@ export class Simulation {
           state: drifter.state,
           stolen: drifter.stolen,
         }));
+      snapshot.motes = this.motes.map((mote) => ({
+        id: mote.id,
+        pos: vec(mote.pos),
+        kind: mote.kind ?? 'random',
+        ttl_s: mote.ttlTicks === null ? null : round3(mote.ttlTicks / TICK_RATE),
+      }));
     }
     return snapshot;
   }
