@@ -63,7 +63,7 @@ export async function run(argv) {
     if (simulation.tick % args.snapshotEvery === 0) records.push(simulation.snapshot());
   }
 
-  records.push({ type: 'end', ticks: simulation.tick, state: simulation.state, score: simulation.score });
+  records.push({ type: 'end', ticks: simulation.tick, state: simulation.outputState, score: simulation.score });
   const output = `${records.map((record) => JSON.stringify(record)).join('\n')}\n`;
   await mkdir(dirname(resolve(args.out)), { recursive: true });
   await writeFile(args.out, output, 'utf8');

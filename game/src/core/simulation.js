@@ -63,11 +63,13 @@ export class Simulation {
     this.rng = new SeededRng(seed);
     this.seed = Number(seed);
     this.tick = 0;
+    this.simTick = 0;
     this.state = 'playing';
+    this.paused = false;
     this.score = 0;
     this.endBonusApplied = false;
     this.dropSequence = 0;
-    this.inputPrevious = { jump: false, interact: false, pulse: false, dash: false };
+    this.inputPrevious = { jump: false, interact: false, pulse: false, dash: false, pause: false };
     this.player = {
       pos: [0, 0, 0],
       velocityY: 0,
@@ -173,7 +175,11 @@ export class Simulation {
   }
 
   get timeLeftS() {
-    return Math.max(0, this.initialDurationS - this.tick / TICK_RATE);
+    return Math.max(0, this.initialDurationS - this.simTick / TICK_RATE);
+  }
+
+  get outputState() {
+    return this.paused ? 'paused' : this.state;
   }
 
   step(input = {}) {
@@ -190,8 +196,25 @@ export class Simulation {
       interact: input.interact === true,
       pulse: input.pulse === true,
       dash: input.dash === true,
+      pause: input.pause === true,
     };
     const rising = (name) => current[name] && !this.inputPrevious[name];
+
+    if (rising('pause') && !this.paused) {
+      this.paused = true;
+      this.tick += 1;
+      this.inputPrevious = current;
+      return [{ name: 'paused', data: {} }];
+    }
+    if (this.paused && !rising('pause')) {
+      this.tick += 1;
+      this.inputPrevious = current;
+      return events;
+    }
+    if (this.paused && rising('pause')) {
+      this.paused = false;
+      events.push({ name: 'resumed', data: {} });
+    }
 
     this.movePlayer(current, rising('jump'));
     this.collectMotes(events);
@@ -199,6 +222,7 @@ export class Simulation {
     if (rising('pulse')) this.pulse(events);
     this.updateShades(events);
 
+    this.simTick += 1;
     this.tick += 1;
     this.inputPrevious = current;
     this.checkTerminal(events);
@@ -399,8 +423,8 @@ export class Simulation {
     return {
       type: 'snapshot',
       tick: this.tick,
-      sim_tick: this.tick,
-      state: this.state,
+      sim_tick: this.simTick,
+      state: this.outputState,
       time_left_s: round3(this.timeLeftS),
       score: this.score,
       player: {

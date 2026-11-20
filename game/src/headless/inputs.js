@@ -1,5 +1,5 @@
 // Input state persists between sparse frames exactly as Test Contract v1.0 defines.
-const BOOLEAN_FIELDS = ['jump', 'interact', 'pulse', 'dash'];
+const BOOLEAN_FIELDS = ['jump', 'interact', 'pulse', 'dash', 'pause'];
 const ALLOWED_FIELDS = new Set(['tick', 'move', 'cam_yaw_deg', ...BOOLEAN_FIELDS]);
 
 function fail(message) {
@@ -50,6 +50,7 @@ export class InputTimeline {
       interact: false,
       pulse: false,
       dash: false,
+      pause: false,
     };
   }
 

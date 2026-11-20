@@ -8,6 +8,9 @@
 - One simulation step is exactly 1/60 second. Never use wall-clock time in core logic.
 - Scenario construction must not emit events or award score.
 - Do not hand-edit generated proof output.
+- Preserve the `phase-1` tag and keep all still-valid Phase 1 scenarios green during Phase 2.
+- In v1.1, wall `tick` continues while paused; `sim_tick` and every gameplay timer stay frozen.
+- Do not guess standardized tuning or RGB values that are absent from the supplied ticket export; record the gap in `game/docs/notes/phase-2.md`.
 
 ## Commands
 
