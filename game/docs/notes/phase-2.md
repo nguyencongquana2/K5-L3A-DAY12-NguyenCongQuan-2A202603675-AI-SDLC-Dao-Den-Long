@@ -16,6 +16,7 @@ The supplied export references values that are not present in the text. Do not i
 2. Complete standard RGB palette table.
 3. Any exact Night names or Ông Đăng introduction text required by the original ticket.
 4. Night 2/3 player starts and whether their recurring shade schedules begin after one full interval.
+5. Dash direction is not stated; the implementation uses current movement direction, or the last facing direction while idle.
 
 Work that does not depend on these values may proceed. Contract/tuning completion and visual palette sign-off remain blocked until the original tables are available.
 
@@ -69,4 +70,5 @@ Work that does not depend on these values may proceed. Contract/tuning completio
 | Night configuration | Standard terrain, lantern, spawn-point, launch-pad, charm, drifter and wind data captured for all three Nights | 21/21 tests; Phase 1 determinism remains 7,884 identical bytes | Unspecified Night 2/3 starts and first recurring shade tick remain unset |
 | Standard score | Contract 1.1 scores deposited motes, pulse targets, lanterns and win bonus using the Ticket-02 formula | 24/24 tests; Phase 1 determinism remains 7,884 identical bytes | Contract 1.0 scoring remains isolated for regression |
 | Wind charm lifecycle | C1/C2 positions, pickup event, 600-tick buff, 7.2 m/s speed, paused timers and 2,700-tick respawn implemented | 27/27 tests; Phase 1 determinism remains 7,884 identical bytes; production build passes | No-cooldown dash effect waits for the dash slice |
+| Dash foundation | Rising-edge dash runs at 14 m/s for 12 ticks; active presses are ignored; pause freezes cooldown; charm removes cooldown | 31/31 tests; Phase 1 determinism remains 7,884 identical bytes | Standard cooldown is read from tuning and awaits the missing table; direction assumption is recorded above |
 

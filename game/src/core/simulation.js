@@ -78,12 +78,18 @@ export class Simulation {
     this.inputPrevious = { jump: false, interact: false, pulse: false, dash: false, pause: false };
     this.player = {
       pos: [0, 0, 0],
+      velocityX: 0,
       velocityY: 0,
+      velocityZ: 0,
+      facing: [0, 1],
       carried: 0,
       flames: tuning.flames,
       invulnTicks: 0,
       pulseCooldownTicks: 0,
       charmTicks: 0,
+      dashTicks: 0,
+      dashCooldownTicks: 0,
+      dashDirection: [0, 1],
     };
     this.lanterns = defaultLanterns(tuning.lantern_count_night1);
     this.motes = defaultMotes(this.rng);
@@ -229,6 +235,7 @@ export class Simulation {
 
     if (this.player.invulnTicks > 0) this.player.invulnTicks -= 1;
     if (this.player.pulseCooldownTicks > 0) this.player.pulseCooldownTicks -= 1;
+    if (this.player.dashCooldownTicks > 0) this.player.dashCooldownTicks -= 1;
     if (this.player.charmTicks > 0) this.player.charmTicks -= 1;
     for (const charm of this.charms) {
       if (charm.available || charm.respawnTicks <= 0) continue;
@@ -236,7 +243,7 @@ export class Simulation {
       if (charm.respawnTicks === 0) charm.available = true;
     }
 
-    this.movePlayer(current, rising('jump'));
+    this.movePlayer(current, rising('jump'), rising('dash'), events);
     this.collectMotes(events);
     this.collectCharms(events);
     if (rising('interact')) this.interact(events);
@@ -250,7 +257,7 @@ export class Simulation {
     return events;
   }
 
-  movePlayer(input, jump) {
+  movePlayer(input, jump, dash, events) {
     let [x, z] = input.move;
     x = Number.isFinite(x) ? Math.max(-1, Math.min(1, x)) : 0;
     z = Number.isFinite(z) ? Math.max(-1, Math.min(1, z)) : 0;
@@ -263,9 +270,36 @@ export class Simulation {
     const yaw = (input.cam_yaw_deg * Math.PI) / 180;
     const worldX = x * Math.cos(yaw) + z * Math.sin(yaw);
     const worldZ = -x * Math.sin(yaw) + z * Math.cos(yaw);
+    if (Math.hypot(worldX, worldZ) > 0) this.player.facing = [worldX, worldZ];
+
+    if (
+      this.contractVersion === '1.1' &&
+      dash &&
+      this.player.dashTicks === 0 &&
+      this.player.dashCooldownTicks === 0
+    ) {
+      assert(Number.isFinite(this.tuning.dash_speed) && this.tuning.dash_speed > 0, 'tuning.dash_speed must be positive');
+      assert(Number.isFinite(this.tuning.dash_duration_s) && this.tuning.dash_duration_s > 0, 'tuning.dash_duration_s must be positive');
+      assert(Number.isFinite(this.tuning.dash_cooldown_s) && this.tuning.dash_cooldown_s >= 0, 'tuning.dash_cooldown_s must be non-negative');
+      this.player.dashDirection = [...this.player.facing];
+      this.player.dashTicks = secondsToTicks(this.tuning.dash_duration_s);
+      this.player.dashCooldownTicks = this.player.charmTicks > 0
+        ? 0
+        : secondsToTicks(this.tuning.dash_cooldown_s);
+      events.push({ name: 'dash', data: {} });
+    }
+
     const playerSpeed = this.player.charmTicks > 0 ? CHARM_SPEED : this.tuning.player_speed;
-    this.player.pos[0] += (worldX * playerSpeed) / TICK_RATE;
-    this.player.pos[2] += (worldZ * playerSpeed) / TICK_RATE;
+    if (this.player.dashTicks > 0) {
+      this.player.velocityX = this.player.dashDirection[0] * this.tuning.dash_speed;
+      this.player.velocityZ = this.player.dashDirection[1] * this.tuning.dash_speed;
+      this.player.dashTicks -= 1;
+    } else {
+      this.player.velocityX = worldX * playerSpeed;
+      this.player.velocityZ = worldZ * playerSpeed;
+    }
+    this.player.pos[0] += this.player.velocityX / TICK_RATE;
+    this.player.pos[2] += this.player.velocityZ / TICK_RATE;
 
     const groundRadius = Math.hypot(this.player.pos[0], this.player.pos[2]);
     if (!this.tuning.fall_enabled && groundRadius > ISLAND_RADIUS) {
@@ -477,6 +511,10 @@ export class Simulation {
     };
     if (this.contractVersion === '1.1') {
       snapshot.night = this.night;
+      snapshot.player.vel = vec([this.player.velocityX, this.player.velocityY, this.player.velocityZ]);
+      snapshot.player.grounded = this.player.pos[1] === 0 && this.player.velocityY === 0;
+      snapshot.player.dash_cd_s = round3(this.player.dashCooldownTicks / TICK_RATE);
+      snapshot.player.pulse_cd_s = round3(this.player.pulseCooldownTicks / TICK_RATE);
       snapshot.player.charm_s = round3(this.player.charmTicks / TICK_RATE);
       snapshot.charms = this.charms.map((charm) => ({
         id: charm.id,
