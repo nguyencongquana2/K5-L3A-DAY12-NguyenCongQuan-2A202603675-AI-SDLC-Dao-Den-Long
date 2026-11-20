@@ -25,11 +25,35 @@ let playing = false;
 let cameraYaw = 0;
 let cameraPitch = 0.38;
 let toastTimeout;
+let pauseRequested = false;
+let requestPointerLockAfterResume = false;
+
+const SETTINGS_KEY = 'dao-den-long.settings.v1';
+
+function loadSettings() {
+  const defaults = { volume: 0.7, sensitivity: 1 };
+  try {
+    const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}');
+    return {
+      volume: Number.isFinite(stored.volume) ? THREE.MathUtils.clamp(stored.volume, 0, 1) : defaults.volume,
+      sensitivity: Number.isFinite(stored.sensitivity)
+        ? THREE.MathUtils.clamp(stored.sensitivity, 0.4, 2)
+        : defaults.sensitivity,
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+const settings = loadSettings();
 
 const ui = {
   hud: document.querySelector('#hud'),
   menu: document.querySelector('#menu'),
   result: document.querySelector('#result'),
+  pauseMenu: document.querySelector('#pause-menu'),
+  pauseActions: document.querySelector('#pause-actions'),
+  settings: document.querySelector('#settings'),
   flames: document.querySelector('#flames'),
   carried: document.querySelector('#carried'),
   lanterns: document.querySelector('#lantern-count'),
@@ -41,6 +65,10 @@ const ui = {
   resultTitle: document.querySelector('#result-title'),
   resultDetail: document.querySelector('#result-detail'),
   finalScore: document.querySelector('#final-score'),
+  volume: document.querySelector('#volume'),
+  volumeValue: document.querySelector('#volume-value'),
+  sensitivity: document.querySelector('#sensitivity'),
+  sensitivityValue: document.querySelector('#sensitivity-value'),
 };
 
 const keys = new Set();
@@ -262,9 +290,13 @@ function resetGame() {
   cameraYaw = 0;
   accumulator = 0;
   ui.result.classList.add('hidden');
+  ui.pauseMenu.classList.add('hidden');
+  ui.settings.classList.add('hidden');
+  ui.pauseActions.classList.remove('hidden');
   ui.menu.classList.add('hidden');
   ui.hud.classList.remove('hidden');
   playing = true;
+  pauseRequested = false;
 }
 
 function currentInput() {
@@ -278,6 +310,8 @@ function currentInput() {
     jump: keys.has('Space'),
     interact: keys.has('KeyE'),
     pulse: keys.has('KeyQ'),
+    dash: keys.has('ShiftLeft') || keys.has('ShiftRight'),
+    pause: keys.has('KeyP') || keys.has('Escape') || pauseRequested,
   };
 }
 
@@ -287,6 +321,17 @@ function handleEvents(events) {
     if (event.name === 'lantern_lit') showToast(`${event.data.lantern_id} đã bừng sáng!`);
     if (event.name === 'pulse') showToast(event.data.stunned_ids.length ? `Xua ${event.data.stunned_ids.length} Bóng Mực` : 'Không có Bóng Mực trong tầm');
     if (event.name === 'player_hit') showToast(`Bị Bóng Mực chạm · rơi ${event.data.dropped} đom đóm`);
+    if (event.name === 'paused') {
+      document.exitPointerLock?.();
+      ui.pauseMenu.classList.remove('hidden');
+    }
+    if (event.name === 'resumed') {
+      ui.pauseMenu.classList.add('hidden');
+      ui.settings.classList.add('hidden');
+      ui.pauseActions.classList.remove('hidden');
+      if (requestPointerLockAfterResume) canvas.requestPointerLock?.();
+      requestPointerLockAfterResume = false;
+    }
     if (event.name === 'game_over') showResult(event.data.result, event.data.reason);
   }
 }
@@ -406,7 +451,9 @@ function animate() {
   if (playing) {
     accumulator += delta;
     while (accumulator >= 1 / TICK_RATE && simulation.state === 'playing') {
-      handleEvents(simulation.step(currentInput()));
+      const input = currentInput();
+      handleEvents(simulation.step(input));
+      pauseRequested = false;
       accumulator -= 1 / TICK_RATE;
     }
   }
@@ -415,15 +462,15 @@ function animate() {
 }
 
 window.addEventListener('keydown', (event) => {
-  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) event.preventDefault();
+  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyP'].includes(event.code)) event.preventDefault();
   keys.add(event.code);
 });
 window.addEventListener('keyup', (event) => keys.delete(event.code));
 window.addEventListener('blur', () => keys.clear());
 window.addEventListener('mousemove', (event) => {
   if (document.pointerLockElement !== canvas || !playing) return;
-  cameraYaw -= event.movementX * 0.0025;
-  cameraPitch = THREE.MathUtils.clamp(cameraPitch - event.movementY * 0.0015, 0.12, 0.75);
+  cameraYaw -= event.movementX * 0.0025 * settings.sensitivity;
+  cameraPitch = THREE.MathUtils.clamp(cameraPitch - event.movementY * 0.0015 * settings.sensitivity, 0.12, 0.75);
 });
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -431,12 +478,56 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 canvas.addEventListener('click', () => {
-  if (playing) canvas.requestPointerLock?.();
+  if (playing && !simulation.paused) canvas.requestPointerLock?.();
 });
 document.querySelector('#start').addEventListener('click', resetGame);
 document.querySelector('#restart').addEventListener('click', resetGame);
+document.querySelector('#continue').addEventListener('click', () => {
+  pauseRequested = true;
+  requestPointerLockAfterResume = true;
+});
+document.querySelector('#retry-night').addEventListener('click', resetGame);
+document.querySelector('#open-settings').addEventListener('click', () => {
+  ui.pauseActions.classList.add('hidden');
+  ui.settings.classList.remove('hidden');
+});
+document.querySelector('#close-settings').addEventListener('click', () => {
+  ui.settings.classList.add('hidden');
+  ui.pauseActions.classList.remove('hidden');
+});
+document.querySelector('#back-to-menu').addEventListener('click', () => {
+  playing = false;
+  keys.clear();
+  pauseRequested = false;
+  ui.pauseMenu.classList.add('hidden');
+  ui.hud.classList.add('hidden');
+  ui.menu.classList.remove('hidden');
+});
+
+function persistSettings() {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function syncSettingsUi() {
+  ui.volume.value = String(Math.round(settings.volume * 100));
+  ui.volumeValue.value = `${Math.round(settings.volume * 100)}%`;
+  ui.sensitivity.value = String(Math.round(settings.sensitivity * 100));
+  ui.sensitivityValue.value = `${Math.round(settings.sensitivity * 100)}%`;
+}
+
+ui.volume.addEventListener('input', () => {
+  settings.volume = Number(ui.volume.value) / 100;
+  syncSettingsUi();
+  persistSettings();
+});
+ui.sensitivity.addEventListener('input', () => {
+  settings.sensitivity = Number(ui.sensitivity.value) / 100;
+  syncSettingsUi();
+  persistSettings();
+});
 
 buildWorld();
+syncSettingsUi();
 if (new URLSearchParams(window.location.search).has('autostart')) {
   resetGame();
 } else {

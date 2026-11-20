@@ -168,6 +168,34 @@ button {
 button:hover { transform: translateY(-2px); box-shadow: 0 14px 35px rgba(237, 137, 58, .4); }
 button:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
 
+button.secondary {
+  background: rgba(255, 255, 255, .09);
+  color: var(--paper);
+  box-shadow: none;
+}
+
+button.ghost {
+  border: 1px solid rgba(255, 255, 255, .15);
+  background: transparent;
+  color: #c8b9d7;
+  box-shadow: none;
+}
+
+.pause-panel { width: min(480px, 100%); }
+.menu-actions { display: grid; gap: 12px; margin-top: 30px; }
+
+.settings {
+  display: grid;
+  gap: 12px;
+  margin-top: 30px;
+  text-align: left;
+}
+
+.settings label { display: flex; justify-content: space-between; color: #e6d9ef; }
+.settings output { color: var(--gold); font-variant-numeric: tabular-nums; }
+.settings input { width: 100%; accent-color: var(--gold); }
+.settings button { margin-top: 12px; }
+
 .hint { margin: 16px 0 0; color: #897a99; font-size: .72rem; }
 .result-panel p { color: #d9c9e7; }
 #final-score { display: block; margin: 20px; color: var(--gold); font-size: 1.5rem; }

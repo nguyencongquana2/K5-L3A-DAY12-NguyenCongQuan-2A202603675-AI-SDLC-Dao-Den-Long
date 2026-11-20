@@ -38,11 +38,39 @@
           <span><kbd>WASD</kbd> Di chuyển</span>
           <span><kbd>Chuột</kbd> Xoay camera</span>
           <span><kbd>Space</kbd> Nhảy</span>
+          <span><kbd>Shift</kbd> Lướt</span>
           <span><kbd>E</kbd> Nạp đèn</span>
           <span><kbd>Q</kbd> Tỏa sáng</span>
+          <span><kbd>Esc/P</kbd> Tạm dừng</span>
         </div>
         <button id="start" type="button">Bắt đầu hành trình</button>
         <p class="hint">Nhấp vào màn chơi để khóa chuột · Esc để thả chuột</p>
+      </section>
+    </main>
+
+    <main id="pause-menu" class="overlay hidden" aria-labelledby="pause-title">
+      <section class="panel pause-panel">
+        <p class="eyebrow">Đêm đang tạm dừng</p>
+        <h2 id="pause-title">Tạm dừng</h2>
+        <div id="pause-actions" class="menu-actions">
+          <button id="continue" type="button">Tiếp tục</button>
+          <button id="retry-night" type="button" class="secondary">Chơi lại Đêm</button>
+          <button id="open-settings" type="button" class="secondary">Cài đặt</button>
+          <button id="back-to-menu" type="button" class="ghost">Về menu</button>
+        </div>
+        <div id="settings" class="settings hidden">
+          <label for="volume">
+            <span>Âm lượng</span>
+            <output id="volume-value" for="volume">70%</output>
+          </label>
+          <input id="volume" type="range" min="0" max="100" step="1" value="70" />
+          <label for="sensitivity">
+            <span>Độ nhạy chuột</span>
+            <output id="sensitivity-value" for="sensitivity">100%</output>
+          </label>
+          <input id="sensitivity" type="range" min="40" max="200" step="5" value="100" />
+          <button id="close-settings" type="button">Quay lại</button>
+        </div>
       </section>
     </main>
 
