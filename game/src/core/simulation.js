@@ -69,6 +69,7 @@ export class Simulation {
     this.tuning = structuredClone(tuning);
     this.contractVersion = contractVersion;
     this.night = night;
+    this.nightConfig = contractVersion === '1.1' ? getNightConfig(night) : null;
     this.rng = new SeededRng(seed);
     this.seed = Number(seed);
     this.tick = 0;
@@ -94,12 +95,19 @@ export class Simulation {
       dashCooldownTicks: 0,
       dashDirection: [0, 1],
     };
-    this.lanterns = defaultLanterns(tuning.lantern_count_night1);
+    this.lanterns = this.nightConfig
+      ? this.nightConfig.lanterns.map((lantern) => ({
+        id: lantern.id,
+        pos: copyVec(lantern.pos),
+        deposited: 0,
+        lit: false,
+      }))
+      : defaultLanterns(tuning.lantern_count_night1);
     this.motes = defaultMotes(this.rng);
     this.shades = defaultShades(this.rng);
     this.drifters = [];
     this.charms = contractVersion === '1.1'
-      ? getNightConfig(night).charms.map((charm) => ({ ...charm, available: true, respawnTicks: 0 }))
+      ? this.nightConfig.charms.map((charm) => ({ ...charm, available: true, respawnTicks: 0 }))
       : [];
     this.windEnabled = contractVersion === '1.1' && night === 3;
     this.wind = { active: false, warning: false, dirDeg: 0, cycle: 0 };

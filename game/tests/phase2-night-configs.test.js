@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFile } from 'node:fs/promises';
 import { getNightConfig, ringPoints } from '../src/core/night-configs.js';
+import { Simulation } from '../src/core/simulation.js';
+
+const contract = JSON.parse(await readFile(new URL('../../game.contract.json', import.meta.url), 'utf8'));
 
 const radiusFrom = (point, center = [0, 0, 0]) => Math.hypot(point[0] - center[0], point[2] - center[2]);
 
@@ -64,4 +68,23 @@ test('night configs are returned as isolated copies and reject unsupported night
   first.lanterns[0].pos[0] = 999;
   assert.equal(getNightConfig(1).lanterns[0].pos[0], 0);
   assert.throws(() => getNightConfig(4), /night must be 1, 2, or 3/);
+});
+
+test('contract 1.1 simulation uses the standard lantern list for each night', () => {
+  const expected = {
+    1: { count: 5, last: [-23.8, 0, 7.7] },
+    2: { count: 6, last: [53, 0, -10] },
+    3: { count: 7, last: [-20, 0, -35] },
+  };
+  for (const night of [1, 2, 3]) {
+    const simulation = new Simulation({
+      seed: 1,
+      tuning: contract.tuning,
+      contractVersion: '1.1',
+      night,
+      scenario: { random_motes: false, random_shades: false, random_drifters: false, charms: [] },
+    });
+    assert.equal(simulation.lanterns.length, expected[night].count);
+    assert.deepEqual(simulation.lanterns.at(-1).pos, expected[night].last);
+  }
 });
