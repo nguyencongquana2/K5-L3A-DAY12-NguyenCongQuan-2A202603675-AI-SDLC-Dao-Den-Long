@@ -12,8 +12,8 @@ function makeSimulation(scenario = {}, night = 1) {
 
 const quiet = { random_motes: false, random_shades: false, random_drifters: false, charms: [] };
 
-test('contract v1.2 centralizes every mandatory Phase 3 tuning value', () => {
-  assert.equal(contract.contract_version, '1.2');
+test('contract v1.3 retains every mandatory Phase 3 tuning value', () => {
+  assert.equal(contract.contract_version, '1.3');
   assert.deepEqual(
     Object.fromEntries(['fuel_max', 'fuel_decay_per_s', 'fuel_per_mote', 'relight_cost', 'win_ratio', 'drain_per_s', 'low_fuel_threshold', 'capacity_max'].map((key) => [key, tuning[key]])),
     { fuel_max: 100, fuel_decay_per_s: 1, fuel_per_mote: 10, relight_cost: 5, win_ratio: 0.6, drain_per_s: 5, low_fuel_threshold: 30, capacity_max: 20 },

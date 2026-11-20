@@ -2,6 +2,13 @@
 
 Project code and generated documentation live under `game/`.
 
+## Phase 4 — v1.0.0 release
+
+- Upgraded Test Contract to v1.3 with reproducible browser benchmark and ten-Night same-process soak commands.
+- Added persistent local Top 10 leaderboard, menu screen, validated player names and JSON export.
+- Added remappable controls with conflict detection, reduced motion, large text and required visual warnings.
+- Added clean-install instructions, release packaging, complete evidence, four-phase retro and release documentation.
+
 ## Phase 3 — breaking changes
 
 - Upgraded the public Test Contract from v1.1 to v1.2 and changed Night durations to 240/270/300 seconds.
@@ -11,6 +18,12 @@ Project code and generated documentation live under `game/`.
 - Added the Shade `drain` state, weak-lantern targeting, cumulative fuel drain and periodic `fuel_drain` evidence events.
 - Added growing carry capacity, the `refuel` and `lantern_out` events, and v1.2 snapshot/scenario fields.
 - Added a persisted distinguishable palette and shape/tear/blink cues that do not rely on colour alone.
+
+## Phase 2
+
+- Expanded the game to three Nights with deterministic terrain, schedules, wind, dash, Gió Lạc and Bùa Gió.
+- Added pause semantics, dynamic entities, standardized score, scenario/snapshot v1.1 fields and a complete browser shell.
+- Added performance, deterministic and browser evidence while retaining Phase 1 behavior.
 
 ## Phase 1
 

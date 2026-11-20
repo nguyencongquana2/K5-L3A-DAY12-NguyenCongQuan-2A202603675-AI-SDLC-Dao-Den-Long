@@ -76,15 +76,17 @@ function configMotes(config) {
 
 /** Deterministic gameplay core; rendering and wall-clock time stay outside. */
 export class Simulation {
-  constructor({ seed = 1, tuning, scenario = {}, contractVersion = '1.0', night = 1 }) {
+  constructor({ seed = 1, tuning, scenario = {}, contractVersion = '1.0', night = 1, mode = 'normal' }) {
     assert(tuning && typeof tuning === 'object', 'tuning is required');
     assert(scenario && typeof scenario === 'object' && !Array.isArray(scenario), 'scenario must be an object');
-    assert(['1.0', '1.1', '1.2'].includes(contractVersion), 'contractVersion must be 1.0, 1.1, or 1.2');
+    assert(['1.0', '1.1', '1.2', '1.3'].includes(contractVersion), 'contractVersion must be 1.0, 1.1, 1.2, or 1.3');
     assert([1, 2, 3].includes(night), 'night must be 1, 2, or 3');
+    assert(['normal', 'benchmark'].includes(mode), 'mode must be normal or benchmark');
 
     this.tuning = structuredClone(tuning);
     this.contractVersion = contractVersion;
     this.night = night;
+    this.mode = mode;
     this.nightConfig = contractVersion !== '1.0' ? getNightConfig(night) : null;
     this.rng = new SeededRng(seed);
     this.seed = Number(seed);
@@ -385,11 +387,11 @@ export class Simulation {
   }
 
   get usesPhase2() {
-    return this.contractVersion === '1.1' || this.contractVersion === '1.2';
+    return this.contractVersion !== '1.0';
   }
 
   get usesPhase3() {
-    return this.contractVersion === '1.2';
+    return this.contractVersion === '1.2' || this.contractVersion === '1.3';
   }
 
   get capacity() {
@@ -403,6 +405,7 @@ export class Simulation {
 
   step(input = {}) {
     if (this.state !== 'playing') return [];
+    if (this.mode === 'benchmark') return this.stepBenchmark();
 
     const events = [];
     const current = {
@@ -484,6 +487,13 @@ export class Simulation {
     this.inputPrevious = current;
     this.checkTerminal(events);
     return events;
+  }
+
+  stepBenchmark() {
+    this.updateShades([], false);
+    this.simTick += 1;
+    this.tick += 1;
+    return [];
   }
 
   movePlayer(input, jump, dash, events) {

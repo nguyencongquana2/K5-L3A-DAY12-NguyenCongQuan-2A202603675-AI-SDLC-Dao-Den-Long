@@ -22,8 +22,8 @@ test('settings expose persisted volume and mouse sensitivity controls', () => {
 });
 
 test('browser input forwards dash and pause to the deterministic core', () => {
-  assert.match(main, /dash: keys\.has\('ShiftLeft'\)/);
-  assert.match(main, /pause: keys\.has\('KeyP'\)/);
+  assert.match(main, /dash: keys\.has\(settings\.bindings\.dash\)/);
+  assert.match(main, /pause: keys\.has\(settings\.bindings\.pause\)/);
 });
 
 test('web product exposes three-Night progression, standard HUD and synthesized audio', () => {

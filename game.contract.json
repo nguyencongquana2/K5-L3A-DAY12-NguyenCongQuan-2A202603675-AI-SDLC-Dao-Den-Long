@@ -1,9 +1,11 @@
 {
-  "contract_version": "1.2",
+  "contract_version": "1.3",
   "team": "2A202603675-nguyen-cong-quan",
   "build_cmd": "npm --prefix game ci",
-  "run_cmd": "npm --prefix game run dev",
+  "run_cmd": "node game/src/launcher/cli.js",
   "headless_cmd": "node game/src/headless/cli.js",
+  "bench_cmd": "node game/src/bench/cli.js",
+  "soak_cmd": "node --expose-gc game/src/soak/cli.js",
   "tuning": {
     "player_speed": 6,
     "carry_capacity": 10,

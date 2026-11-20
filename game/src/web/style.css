@@ -1,6 +1,7 @@
 /* Presentation stays independent from the deterministic gameplay core. */
 :root {
   color: #fff8de;
+  font-size: 18px;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-synthesis: none;
   --ink: #100b24;
@@ -8,6 +9,14 @@
   --gold: #ffcb62;
   --paper: #fff4d0;
   --warning: #ff5a5f;
+}
+
+html.large-text { font-size: 22.5px; }
+body.reduced-motion *, body.reduced-motion *::before, body.reduced-motion *::after {
+  scroll-behavior: auto !important;
+  animation-duration: .001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .001ms !important;
 }
 
 * { box-sizing: border-box; }
@@ -86,7 +95,7 @@ body.distinguishable-palette { --warning: #ffffff; }
   gap: 7px;
   text-align: right;
   color: #d9c9e7;
-  font-size: .78rem;
+  font-size: 1rem;
 }
 
 .lantern-arrow {
@@ -99,6 +108,32 @@ body.distinguishable-palette { --warning: #ffffff; }
   text-align: right;
   transform-origin: 50% 50%;
 }
+
+.shade-arrow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 70vw;
+  color: #7a3cff;
+  font-size: 2rem;
+  text-align: right;
+  transform-origin: 50% 50%;
+}
+
+body.distinguishable-palette .shade-arrow { color: #00b3ff; }
+
+.visual-warning {
+  position: absolute;
+  left: 22px;
+  top: 88px;
+  padding: 10px 14px;
+  border: 2px solid var(--warning);
+  border-radius: 12px;
+  background: rgba(16, 11, 36, .88);
+  color: var(--warning);
+  font-weight: 800;
+}
+.fuel-warning { top: 142px; }
 
 .crosshair {
   position: absolute;
@@ -150,7 +185,7 @@ body.distinguishable-palette { --warning: #ffffff; }
 .eyebrow {
   margin: 0 0 10px;
   color: var(--gold);
-  font-size: .76rem;
+  font-size: 1rem;
   font-weight: 700;
   letter-spacing: .18em;
   text-transform: uppercase;
@@ -191,7 +226,7 @@ h2 { font-size: clamp(2.5rem, 7vw, 4.6rem); }
   border-radius: 10px;
   background: rgba(255, 255, 255, .06);
   color: #d9c9e7;
-  font-size: .78rem;
+  font-size: 1rem;
 }
 
 kbd { color: var(--gold); font-weight: 700; }
@@ -234,6 +269,9 @@ button.ghost {
   text-align: left;
 }
 
+.settings-panel { width: min(720px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; }
+.settings h3 { margin: 14px 0 2px; color: var(--paper); }
+
 .settings label { display: flex; justify-content: space-between; color: #e6d9ef; }
 .settings output { color: var(--gold); font-variant-numeric: tabular-nums; }
 .settings input { width: 100%; accent-color: var(--gold); }
@@ -241,13 +279,35 @@ button.ghost {
 .settings .toggle-setting input { width: 22px; height: 22px; }
 .settings button { margin-top: 12px; }
 
-.hint { margin: 16px 0 0; color: #897a99; font-size: .72rem; }
+.key-bindings {
+  display: grid;
+  grid-template-columns: 1fr minmax(130px, auto);
+  gap: 8px 14px;
+  align-items: center;
+}
+.key-bindings button { margin: 0; padding: 8px 14px; }
+.setting-feedback { min-height: 1.5em; margin: 4px 0; color: var(--warning); }
+.settings-actions { display: flex; gap: 12px; justify-content: center; }
+.main-actions { max-width: 360px; margin-inline: auto; }
+
+.hint { margin: 16px 0 0; color: #a99ab9; font-size: 1rem; }
 .result-panel p { color: #d9c9e7; }
 #final-score { display: block; margin: 20px; color: var(--gold); font-size: 1.5rem; }
 
+.leaderboard-panel { width: min(760px, 100%); }
+.leaderboard-list { display: grid; gap: 8px; max-height: 50vh; margin: 24px 0; padding-left: 36px; overflow-y: auto; text-align: left; }
+.leaderboard-list li { padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, .06); }
+.leaderboard-list li:not(.leaderboard-empty) { display: grid; grid-template-columns: 1fr auto; gap: 2px 15px; }
+.leaderboard-list time { grid-column: 1 / -1; color: #b8a9c7; }
+.leaderboard-entry { display: grid; gap: 8px; margin: 18px 0; }
+.leaderboard-entry > div { display: flex; gap: 8px; justify-content: center; }
+.leaderboard-entry input { min-width: 220px; padding: 12px 15px; border: 2px solid var(--gold); border-radius: 999px; font: inherit; }
+.leaderboard-entry button { padding-block: 10px; }
+.leaderboard-entry p { min-height: 1.5em; margin: 0; color: var(--warning); }
+
 @media (max-width: 640px) {
   .hud { padding: 10px; }
-  .hud-card { top: 10px; gap: 9px; padding: 9px 11px; font-size: .77rem; }
+  .hud-card { top: 10px; gap: 9px; padding: 9px 11px; font-size: 1rem; }
   .flames-card { left: 10px; }
   .status-card { right: 10px; flex-direction: column; gap: 1px; }
   .timer-card { top: 70px; }

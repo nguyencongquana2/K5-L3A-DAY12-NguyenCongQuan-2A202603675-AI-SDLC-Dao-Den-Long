@@ -31,9 +31,12 @@
         <span id="dash-cooldown">⇧ Lướt · Sẵn sàng</span>
         <span id="pulse-cooldown">Q Tỏa sáng · Sẵn sàng</span>
       </section>
-      <div id="prompt" class="prompt hidden">E — <span id="interaction-label">Nạp ánh sáng</span> (<span id="deposit-progress">0/10</span>)</div>
+      <div id="prompt" class="prompt hidden"><span id="interact-key">E</span> — <span id="interaction-label">Nạp ánh sáng</span> (<span id="deposit-progress">0/10</span>)</div>
       <div id="lantern-arrow" class="lantern-arrow hidden" aria-label="Hướng tới đèn chưa sáng">➤</div>
       <div id="toast" class="toast hidden"></div>
+      <div id="wind-warning" class="visual-warning hidden">⚠ Gió mạnh sắp thổi</div>
+      <div id="fuel-warning" class="visual-warning fuel-warning hidden">⚠ Đèn sắp cạn dầu</div>
+      <div id="shade-arrow" class="shade-arrow hidden" aria-label="Hướng Bóng Mực vừa xuất hiện">➤</div>
       <div class="crosshair" aria-hidden="true"></div>
     </div>
 
@@ -54,7 +57,11 @@
           <span><kbd>Q</kbd> Tỏa sáng</span>
           <span><kbd>Esc/P</kbd> Tạm dừng</span>
         </div>
-        <button id="start" type="button">Bắt đầu hành trình</button>
+        <div class="menu-actions main-actions">
+          <button id="start" type="button">Bắt đầu hành trình</button>
+          <button id="open-leaderboard" type="button" class="secondary">Bảng xếp hạng</button>
+          <button id="open-main-settings" type="button" class="secondary">Cài đặt &amp; trợ năng</button>
+        </div>
         <p class="hint">Nhấp vào màn chơi để khóa chuột · Esc để thả chuột</p>
       </section>
     </main>
@@ -78,7 +85,13 @@
           <button id="open-settings" type="button" class="secondary">Cài đặt</button>
           <button id="back-to-menu" type="button" class="ghost">Về menu</button>
         </div>
-        <div id="settings" class="settings hidden">
+      </section>
+    </main>
+
+    <main id="settings" class="overlay hidden" aria-labelledby="settings-title">
+      <section class="panel settings-panel">
+        <h2 id="settings-title">Cài đặt &amp; trợ năng</h2>
+        <div class="settings">
           <label for="volume">
             <span>Âm lượng</span>
             <output id="volume-value" for="volume">70%</output>
@@ -93,8 +106,41 @@
             <span>Bảng màu dễ phân biệt</span>
             <input id="distinguishable-palette" type="checkbox" />
           </label>
-          <button id="close-settings" type="button">Quay lại</button>
+          <label class="toggle-setting" for="reduced-motion">
+            <span>Giảm chuyển động</span>
+            <input id="reduced-motion" type="checkbox" />
+          </label>
+          <label class="toggle-setting" for="large-text">
+            <span>Chữ lớn ×1.25</span>
+            <input id="large-text" type="checkbox" />
+          </label>
+          <h3>Đổi phím</h3>
+          <div id="key-bindings" class="key-bindings">
+            <span>Đi lên</span><button type="button" data-bind-action="moveForward"></button>
+            <span>Đi xuống</span><button type="button" data-bind-action="moveBackward"></button>
+            <span>Đi trái</span><button type="button" data-bind-action="moveLeft"></button>
+            <span>Đi phải</span><button type="button" data-bind-action="moveRight"></button>
+            <span>Nhảy</span><button type="button" data-bind-action="jump"></button>
+            <span>Lướt</span><button type="button" data-bind-action="dash"></button>
+            <span>Tương tác</span><button type="button" data-bind-action="interact"></button>
+            <span>Tỏa sáng</span><button type="button" data-bind-action="pulse"></button>
+            <span>Tạm dừng</span><button type="button" data-bind-action="pause"></button>
+          </div>
+          <p id="binding-feedback" class="setting-feedback" aria-live="polite"></p>
+          <div class="settings-actions">
+            <button id="restore-bindings" type="button" class="secondary">Khôi phục mặc định</button>
+            <button id="close-settings" type="button">Quay lại</button>
+          </div>
         </div>
+      </section>
+    </main>
+
+    <main id="leaderboard" class="overlay hidden" aria-labelledby="leaderboard-title">
+      <section class="panel leaderboard-panel">
+        <p class="eyebrow">Top 10 cục bộ</p>
+        <h2 id="leaderboard-title">Bảng xếp hạng</h2>
+        <ol id="leaderboard-list" class="leaderboard-list"></ol>
+        <button id="close-leaderboard" type="button">Quay lại menu</button>
       </section>
     </main>
 
@@ -104,6 +150,14 @@
         <h2 id="result-title"></h2>
         <p id="result-detail"></p>
         <strong id="final-score"></strong>
+        <form id="leaderboard-entry" class="leaderboard-entry hidden">
+          <label for="leaderboard-name">Tên người giữ đèn</label>
+          <div>
+            <input id="leaderboard-name" name="name" minlength="3" maxlength="12" pattern="[A-Za-z0-9_]{3,12}" autocomplete="nickname" placeholder="MAY_01" required />
+            <button type="submit">Lưu điểm</button>
+          </div>
+          <p id="leaderboard-error" aria-live="polite"></p>
+        </form>
         <button id="restart" type="button">Chơi lại Đêm 1</button>
       </section>
     </main>
