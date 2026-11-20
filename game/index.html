@@ -10,25 +10,36 @@
   </head>
   <body>
     <canvas id="game" aria-label="Khung cảnh game 3D"></canvas>
+    <output id="benchmark-result" class="hidden" aria-hidden="true"></output>
 
     <div id="hud" class="hud hidden" aria-live="polite">
-      <section class="hud-card status-card">
+      <section class="hud-card flames-card">
         <span id="flames" title="Sinh lực">🔥🔥🔥</span>
-        <span><b id="carried">0</b>/6 ✨</span>
-        <span><b id="lantern-count">0</b>/5 🏮</span>
       </section>
-      <section class="hud-card score-card">
-        <span>Điểm <b id="score">0</b></span>
+      <section class="hud-card timer-card">
         <span id="timer">05:00</span>
       </section>
-      <div id="prompt" class="prompt hidden">Nhấn E để nạp ánh sáng</div>
+      <section class="hud-card status-card">
+        <span>🏮 <b id="lantern-count">0</b>/<b id="lantern-total">5</b></span>
+        <span>Điểm <b id="score">0</b></span>
+      </section>
+      <section class="mote-panel" aria-label="Đom đóm đang mang">
+        <div id="mote-bar" class="mote-bar"></div>
+        <span><b id="carried">0</b>/10</span>
+      </section>
+      <section class="cooldowns">
+        <span id="dash-cooldown">⇧ Lướt · Sẵn sàng</span>
+        <span id="pulse-cooldown">Q Tỏa sáng · Sẵn sàng</span>
+      </section>
+      <div id="prompt" class="prompt hidden">E — Nạp ánh sáng (<span id="deposit-progress">0/10</span>)</div>
+      <div id="lantern-arrow" class="lantern-arrow hidden" aria-label="Hướng tới đèn chưa sáng">➤</div>
       <div id="toast" class="toast hidden"></div>
       <div class="crosshair" aria-hidden="true"></div>
     </div>
 
     <main id="menu" class="overlay">
       <section class="panel">
-        <p class="eyebrow">Đêm 1 · Đảo Bến</p>
+        <p class="eyebrow">Ba Đêm · Một Bình Minh</p>
         <h1>Đảo Đèn Lồng</h1>
         <p class="story">
           Sương đen đã nuốt ánh sáng. Hãy giúp Mây gom đom đóm, thắp năm Đèn Lồng Lớn
@@ -45,6 +56,15 @@
         </div>
         <button id="start" type="button">Bắt đầu hành trình</button>
         <p class="hint">Nhấp vào màn chơi để khóa chuột · Esc để thả chuột</p>
+      </section>
+    </main>
+
+    <main id="night-intro" class="overlay hidden" aria-labelledby="night-title">
+      <section class="panel">
+        <p id="night-eyebrow" class="eyebrow"></p>
+        <h2 id="night-title"></h2>
+        <p id="night-story" class="story"></p>
+        <button id="begin-night" type="button">Bước vào màn sương</button>
       </section>
     </main>
 

@@ -52,10 +52,51 @@ button, kbd { font: inherit; }
   backdrop-filter: blur(12px);
 }
 
-.status-card { left: 22px; }
-.score-card { right: 22px; }
+.flames-card { left: 22px; }
+.timer-card { left: 50%; transform: translateX(-50%); }
+.status-card { right: 22px; }
 .hud-card b { color: var(--gold); }
-#timer { min-width: 50px; color: #f0d7ff; font-variant-numeric: tabular-nums; }
+#timer { min-width: 64px; color: #f0d7ff; font-size: 1.2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+#timer.urgent { color: #ff6b61; animation: timer-pulse .7s infinite alternate; }
+
+@keyframes timer-pulse { to { transform: scale(1.09); text-shadow: 0 0 15px #ff3f34; } }
+
+.mote-panel {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  transform: translateX(-50%);
+  color: var(--gold);
+}
+
+.mote-bar { display: flex; gap: 5px; }
+.mote-bar i { width: 17px; height: 17px; border: 1px solid #a58b5e; border-radius: 50%; background: rgba(10, 7, 25, .75); }
+.mote-bar i.filled { background: #ffe071; box-shadow: 0 0 12px #ffb640; }
+
+.cooldowns {
+  position: absolute;
+  right: 22px;
+  bottom: 22px;
+  display: grid;
+  gap: 7px;
+  text-align: right;
+  color: #d9c9e7;
+  font-size: .78rem;
+}
+
+.lantern-arrow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 74vw;
+  color: var(--gold);
+  font-size: 1.8rem;
+  text-align: right;
+  transform-origin: 50% 50%;
+}
 
 .crosshair {
   position: absolute;
@@ -203,8 +244,11 @@ button.ghost {
 @media (max-width: 640px) {
   .hud { padding: 10px; }
   .hud-card { top: 10px; gap: 9px; padding: 9px 11px; font-size: .77rem; }
-  .status-card { left: 10px; }
-  .score-card { right: 10px; flex-direction: column; gap: 1px; }
+  .flames-card { left: 10px; }
+  .status-card { right: 10px; flex-direction: column; gap: 1px; }
+  .timer-card { top: 70px; }
+  .cooldowns { right: 10px; bottom: 58px; }
+  .mote-bar i { width: 12px; height: 12px; }
   .panel { padding: 28px 20px; }
   h1 { font-size: clamp(2.35rem, 12vw, 3.4rem); }
 }
