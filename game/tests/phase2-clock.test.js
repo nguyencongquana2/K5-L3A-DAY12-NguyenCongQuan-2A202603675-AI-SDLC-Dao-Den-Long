@@ -16,12 +16,16 @@ function makeSimulation() {
 
 test('pause advances wall tick while freezing simulation time', () => {
   const simulation = makeSimulation();
+  simulation.player.invulnTicks = 10;
+  simulation.player.pulseCooldownTicks = 20;
   const paused = simulation.step({ move: [0, 1], pause: true });
 
   assert.deepEqual(paused, [{ name: 'paused', data: {} }]);
   assert.equal(simulation.tick, 1);
   assert.equal(simulation.simTick, 0);
   assert.equal(simulation.timeLeftS, 10);
+  assert.equal(simulation.player.invulnTicks, 10);
+  assert.equal(simulation.player.pulseCooldownTicks, 20);
   assert.equal(simulation.player.pos[2], 0);
   assert.equal(simulation.snapshot().state, 'paused');
 
@@ -29,6 +33,8 @@ test('pause advances wall tick while freezing simulation time', () => {
   assert.equal(simulation.tick, 2);
   assert.equal(simulation.simTick, 0);
   assert.equal(simulation.timeLeftS, 10);
+  assert.equal(simulation.player.invulnTicks, 10);
+  assert.equal(simulation.player.pulseCooldownTicks, 20);
   assert.equal(simulation.player.pos[2], 0);
 });
 

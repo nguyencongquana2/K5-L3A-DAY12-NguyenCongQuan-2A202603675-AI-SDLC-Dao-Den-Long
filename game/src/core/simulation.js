@@ -187,9 +187,6 @@ export class Simulation {
     if (this.state !== 'playing') return [];
 
     const events = [];
-    if (this.player.invulnTicks > 0) this.player.invulnTicks -= 1;
-    if (this.player.pulseCooldownTicks > 0) this.player.pulseCooldownTicks -= 1;
-
     const current = {
       move: Array.isArray(input.move) ? input.move : [0, 0],
       cam_yaw_deg: Number.isFinite(input.cam_yaw_deg) ? input.cam_yaw_deg : 0,
@@ -216,6 +213,9 @@ export class Simulation {
       this.paused = false;
       events.push({ name: 'resumed', data: {} });
     }
+
+    if (this.player.invulnTicks > 0) this.player.invulnTicks -= 1;
+    if (this.player.pulseCooldownTicks > 0) this.player.pulseCooldownTicks -= 1;
 
     this.movePlayer(current, rising('jump'));
     this.collectMotes(events);
