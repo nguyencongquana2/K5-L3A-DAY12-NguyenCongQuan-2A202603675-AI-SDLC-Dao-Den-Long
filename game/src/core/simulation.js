@@ -1,5 +1,6 @@
 import { SeededRng } from './rng.js';
-import { TICK_RATE } from './constants.js';
+import { CHARM_DURATION_TICKS, CHARM_RESPAWN_TICKS, CHARM_SPEED, TICK_RATE } from './constants.js';
+import { getNightConfig } from './night-configs.js';
 
 export { TICK_RATE } from './constants.js';
 export const ISLAND_RADIUS = 38;
@@ -56,13 +57,15 @@ function defaultShades(rng) {
 
 /** Deterministic gameplay core; rendering and wall-clock time stay outside. */
 export class Simulation {
-  constructor({ seed = 1, tuning, scenario = {}, contractVersion = '1.0' }) {
+  constructor({ seed = 1, tuning, scenario = {}, contractVersion = '1.0', night = 1 }) {
     assert(tuning && typeof tuning === 'object', 'tuning is required');
     assert(scenario && typeof scenario === 'object' && !Array.isArray(scenario), 'scenario must be an object');
     assert(['1.0', '1.1'].includes(contractVersion), 'contractVersion must be 1.0 or 1.1');
+    assert([1, 2, 3].includes(night), 'night must be 1, 2, or 3');
 
     this.tuning = structuredClone(tuning);
     this.contractVersion = contractVersion;
+    this.night = night;
     this.rng = new SeededRng(seed);
     this.seed = Number(seed);
     this.tick = 0;
@@ -80,10 +83,14 @@ export class Simulation {
       flames: tuning.flames,
       invulnTicks: 0,
       pulseCooldownTicks: 0,
+      charmTicks: 0,
     };
     this.lanterns = defaultLanterns(tuning.lantern_count_night1);
     this.motes = defaultMotes(this.rng);
     this.shades = defaultShades(this.rng);
+    this.charms = contractVersion === '1.1'
+      ? getNightConfig(night).charms.map((charm) => ({ ...charm, available: true, respawnTicks: 0 }))
+      : [];
     this.initialDurationS = tuning.night1_duration_s;
 
     this.applyScenario(scenario);
@@ -222,9 +229,16 @@ export class Simulation {
 
     if (this.player.invulnTicks > 0) this.player.invulnTicks -= 1;
     if (this.player.pulseCooldownTicks > 0) this.player.pulseCooldownTicks -= 1;
+    if (this.player.charmTicks > 0) this.player.charmTicks -= 1;
+    for (const charm of this.charms) {
+      if (charm.available || charm.respawnTicks <= 0) continue;
+      charm.respawnTicks -= 1;
+      if (charm.respawnTicks === 0) charm.available = true;
+    }
 
     this.movePlayer(current, rising('jump'));
     this.collectMotes(events);
+    this.collectCharms(events);
     if (rising('interact')) this.interact(events);
     if (rising('pulse')) this.pulse(events);
     this.updateShades(events);
@@ -249,8 +263,9 @@ export class Simulation {
     const yaw = (input.cam_yaw_deg * Math.PI) / 180;
     const worldX = x * Math.cos(yaw) + z * Math.sin(yaw);
     const worldZ = -x * Math.sin(yaw) + z * Math.cos(yaw);
-    this.player.pos[0] += (worldX * this.tuning.player_speed) / TICK_RATE;
-    this.player.pos[2] += (worldZ * this.tuning.player_speed) / TICK_RATE;
+    const playerSpeed = this.player.charmTicks > 0 ? CHARM_SPEED : this.tuning.player_speed;
+    this.player.pos[0] += (worldX * playerSpeed) / TICK_RATE;
+    this.player.pos[2] += (worldZ * playerSpeed) / TICK_RATE;
 
     const groundRadius = Math.hypot(this.player.pos[0], this.player.pos[2]);
     if (!this.tuning.fall_enabled && groundRadius > ISLAND_RADIUS) {
@@ -282,6 +297,16 @@ export class Simulation {
       }
     }
     this.motes = remaining;
+  }
+
+  collectCharms(events) {
+    for (const charm of this.charms) {
+      if (!charm.available || distanceXZ(this.player.pos, charm.pos) > this.tuning.pickup_radius) continue;
+      charm.available = false;
+      charm.respawnTicks = CHARM_RESPAWN_TICKS;
+      this.player.charmTicks = CHARM_DURATION_TICKS;
+      events.push({ name: 'charm_picked', data: { charm_id: charm.id, charm_ticks: CHARM_DURATION_TICKS } });
+    }
   }
 
   interact(events) {
@@ -428,7 +453,7 @@ export class Simulation {
 
   snapshot() {
     const vec = (value) => value.map(round3);
-    return {
+    const snapshot = {
       type: 'snapshot',
       tick: this.tick,
       sim_tick: this.simTick,
@@ -450,5 +475,15 @@ export class Simulation {
       motes_active: this.motes.length,
       motes: this.motes.map((mote) => ({ id: mote.id, pos: vec(mote.pos) })),
     };
+    if (this.contractVersion === '1.1') {
+      snapshot.night = this.night;
+      snapshot.player.charm_s = round3(this.player.charmTicks / TICK_RATE);
+      snapshot.charms = this.charms.map((charm) => ({
+        id: charm.id,
+        available: charm.available,
+        respawn_s: round3(charm.respawnTicks / TICK_RATE),
+      }));
+    }
+    return snapshot;
   }
 }

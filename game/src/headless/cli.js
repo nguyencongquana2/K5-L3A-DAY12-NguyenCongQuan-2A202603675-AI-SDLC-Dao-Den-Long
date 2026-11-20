@@ -28,7 +28,7 @@ function parseArgs(argv) {
     snapshotEvery: args['snapshot-every'] === undefined ? 10 : Number(args['snapshot-every']),
   };
   if (!Number.isInteger(parsed.seed)) throw new Error('--seed must be an integer');
-  if (parsed.night !== 1) throw new Error('Phase 1 supports only --night 1');
+  if (![1, 2, 3].includes(parsed.night)) throw new Error('--night must be 1, 2, or 3');
   if (!Number.isInteger(parsed.ticks) || parsed.ticks < 0) throw new Error('--ticks must be a non-negative integer');
   if (!Number.isInteger(parsed.snapshotEvery) || parsed.snapshotEvery <= 0) {
     throw new Error('--snapshot-every must be a positive integer');
@@ -48,6 +48,9 @@ async function readJson(path, label, fallback) {
 export async function run(argv) {
   const args = parseArgs(argv);
   const contract = JSON.parse(await readFile(resolve(repoRoot, 'game.contract.json'), 'utf8'));
+  if (contract.contract_version === '1.0' && args.night !== 1) {
+    throw new Error('contract 1.0 supports only --night 1');
+  }
   const scenario = await readJson(args.scenario, 'invalid scenario file', {});
   const inputDocument = await readJson(args.inputs, 'invalid inputs file', { frames: [] });
   const frames = validateInputs(inputDocument);
@@ -57,6 +60,7 @@ export async function run(argv) {
     tuning: contract.tuning,
     scenario,
     contractVersion: contract.contract_version,
+    night: args.night,
   });
   const records = [simulation.snapshot()];
 
