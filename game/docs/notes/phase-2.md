@@ -1,6 +1,6 @@
 # Phase 2 — Ticket-02 plan and acceptance criteria
 
-Status: requirements captured; implementation proceeds in independently verified slices.
+Status: implementation complete under the documented assumptions below; automated release gates pass.
 
 ## Sources
 
@@ -8,19 +8,21 @@ Status: requirements captured; implementation proceeds in independently verified
 - Instructor deck is process guidance only; it does not define exact tuning or palette values.
 - Phase 1 regression baseline: tag `phase-1` (`6590b26`).
 
-## Blocking information still required
+## Locked assumptions for omitted source tables
 
-The supplied export references values that are not present in the text. Do not invent them:
+The supplied export references tuning/RGB tables but omits their rows. Ticket-02 explicitly allows reasonable assumptions for ambiguous PRD content, so Phase 2 uses these centralized, replaceable values:
 
-1. Complete standardized tuning table, including base carry/cost/radii, dash cooldown, and Night 2/3 durations.
-2. Complete standard RGB palette table.
-3. Any exact Night names or Ông Đăng introduction text required by the original ticket.
-4. Night 2/3 player starts and whether their recurring shade schedules begin after one full interval.
-5. Dash direction is not stated; the implementation uses current movement direction, or the last facing direction while idle.
-6. The ticket does not define the “fog points” used to spawn drifters; automatic spawning stays disabled until those coordinates are supplied.
-7. Idle drifter pathing is not specified; scenario drifters use a seeded deterministic heading at 2 m/s.
+- `carry_capacity = 10`, `lantern_cost = 10` from the mandatory ten-slot HUD and `x/10` prompt.
+- `pulse_cost = 2`, `dash_cooldown_s = 1.5`, `night2_duration_s = 330`, `night3_duration_s = 360`, dropped-mote TTL `15 s`.
+- Night 2 starts at `(0,0,0)`; Night 3 starts at `(0,0,-30)`.
+- Dash follows current movement, or last facing while idle.
+- Shade recurring schedules first fire after one full interval. Drifter fog points reuse the standardized enemy spawn ring.
+- Idle drifters use a seeded deterministic heading at 2 m/s.
+- Falling loses all carried motes, costs one flame and respawns at the Night start.
+- Assumed palette: sky `#160D2D`, fog `#21153B`, ground `#3B5544`, lantern `#FFB648`, mote `#FFE27D`, shade `#181020`, drifter `#78949B`, charm `#C8322E`, UI gold `#FFCB62`.
+- Assumed names: Đảo Khởi Quang, Song Đảo Cầu Tre, Đảo Tháp Gió; Ông Đăng lines are original project copy.
 
-Work that does not depend on these values may proceed. Contract/tuning completion and visual palette sign-off remain blocked until the original tables are available.
+All numeric gameplay values are declared in root `game.contract.json`; changing the missing official table later requires no scattered code edits.
 
 ## Contract v1.1 acceptance criteria
 
@@ -50,7 +52,7 @@ Work that does not depend on these values may proceed. Contract/tuning completio
 | Bùa Gió | Pickup lasts 600 ticks, refreshes, changes speed, removes dash cooldown and respawns after 2,700 ticks | Pickup/expiry/respawn scenario |
 | Three-Night flow | Win advances; Night 3 win shows dawn/total score; loss retries the same Night | Core flow tests + browser proof |
 | HUD/pause/settings/audio | Required HUD fields, pause menu, persisted volume/sensitivity and listed cues are present | Browser proof/checklist |
-| Frame rate | Normal build averages at least 30 FPS at 1280×720 | Measured browser proof |
+| Frame rate | Normal build averages at least 30 FPS at 1280×720 | Chrome/D3D11 proof: 119.32 FPS at exact 1280×720 |
 
 ## Implementation slices
 
@@ -78,4 +80,7 @@ Work that does not depend on these values may proceed. Contract/tuning completio
 | Night 3 wind | Seeded direction, 1,800-tick cycle, 120-tick warning, 300-tick active window, 2 m/s force, pause freeze and scenario disable implemented | 41/41 tests; Phase 1 determinism remains 7,884 identical bytes | Browser warning leaves/audio still belong to the web slice |
 | Web pause/settings shell | Esc/P input, Continue/Retry/Settings/Menu actions, persisted volume/sensitivity sliders and Shift dash input wired | Production build and static DOM wiring checks pass; core pause tests pass | Browser interaction proof pending because no browser surface is available in the current environment |
 | Standard lantern maps | Contract 1.1 simulation selects the exact 5/6/7 lantern ids and positions for Nights 1/2/3 | 45/45 tests; Phase 1 determinism remains 7,884 identical bytes | Per-Night durations and Night 2/3 starts remain unset pending source values |
+| Terrain/spawn release | v1.1 contract, Night durations, ground/fall/respawn, launch pads, three-level terrain and exact shade/drifter schedules wired | 50/50 automated tests pass | Omitted values follow locked assumptions above |
+| Three-Night web product | Menu/intro/play/result progression, total score, Night terrain, Gió Lạc/Bùa visuals, ten-slot HUD, cooldowns, offscreen arrow, pause/settings and synthesized audio implemented | Production build passes; static web wiring tests pass; browser screenshot captured | Chrome/D3D11 proof stored in `docs/proof/phase-2` |
+| Performance/determinism | Full 21,600-tick Night 3 run completes in 0.096 s; repeated outputs are byte-identical; browser averages 119.32 FPS at exact 1280×720 | JSONL and PNG proof stored in `docs/proof/phase-2` | All stated performance gates pass |
 

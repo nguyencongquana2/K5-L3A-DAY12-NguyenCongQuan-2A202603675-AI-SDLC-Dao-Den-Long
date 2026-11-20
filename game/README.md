@@ -1,54 +1,50 @@
 # Đảo Đèn Lồng
 
-> Video demo: sẽ được đính kèm vào GitHub Release `v1.0.0` ở Phase 4.
-
-Game phiêu lưu 3D góc nhìn thứ ba. Bạn điều khiển Mây thu thập đom đóm, thắp năm Đèn Lồng Lớn và xua Bóng Mực trước khi bình minh đến.
+Game phiêu lưu 3D gồm ba Đêm. Bạn điều khiển Mây thu thập đom đóm, thắp Đèn Lồng Lớn, tránh Bóng Mực và giành lại bình minh.
 
 ## Chạy game
 
-Yêu cầu Node.js 24+. Chạy trên Windows, macOS hoặc Linux:
+Yêu cầu Node.js 24+:
 
 ```bash
 npm --prefix game ci
 npm --prefix game run dev
 ```
 
-Mở địa chỉ Vite in ra terminal. Bản production tạo bằng `npm --prefix game run build` và nằm trong `game/dist/`.
+Mở địa chỉ Vite in ra terminal, thường là `http://localhost:5173`. Build production bằng `npm --prefix game run build`.
 
 ## Điều khiển
 
 | Phím | Hành động |
 |---|---|
-| `WASD` / phím mũi tên | Di chuyển theo hướng camera |
-| Chuột | Xoay camera góc nhìn thứ ba |
+| `WASD` / phím mũi tên | Di chuyển theo camera |
+| Chuột | Xoay camera |
 | `Space` | Nhảy |
-| `E` | Nạp toàn bộ ánh sáng cần thiết vào đèn gần nhất |
-| `Q` | Tỏa sáng: tốn 1 đom đóm, đẩy lùi và làm choáng Bóng Mực |
-| `Esc` | Thả chuột |
+| `Shift` | Lướt 14 m/s trong 12 tick |
+| `E` | Nạp đom đóm vào đèn gần nhất |
+| `Q` | Tỏa sáng |
+| `Esc` / `P` | Tạm dừng / tiếp tục |
 
-Mây có 3 ngọn lửa sinh lực. Thắp đủ năm đèn để thắng; hết lửa hoặc hết 5 phút thì thua. Sau màn hình kết quả có thể chơi lại ngay.
+Mây có 3 Ngọn Lửa và mang tối đa 10 đom đóm. Tỏa sáng tốn 2 đom đóm. Bùa Gió tăng tốc chạy lên 7,2 m/s trong 600 tick và bỏ hồi chiêu Lướt. Thua sẽ chơi lại Đêm hiện tại; thắng Đêm 3 mở màn hình Bình Minh và tổng điểm.
 
-## Điểm số
+## Điểm chuẩn Phase 2
 
 | Sự kiện | Điểm |
 |---|---:|
-| Nhặt một đom đóm | 10 |
+| Nạp một đom đóm | 10 |
 | Thắp một Đèn Lồng Lớn | 100 |
-| Làm choáng một Bóng Mực | 20 |
-| Mỗi giây còn lại khi thắng | 5 |
-| Mỗi ngọn lửa còn lại khi thắng | 50 |
+| Mỗi Bóng Mực trúng Tỏa Sáng | 5 |
+| Bonus thắng | `floor(giây còn lại) × 2 + Ngọn Lửa × 50` |
 
-Các giá trị gameplay đầy đủ nằm trong [`game.contract.json`](../game.contract.json). Pulse tốn 1 đom đóm đang mang (`carried`); nếu không đủ thì pulse không kích hoạt, không trừ tài nguyên và không phát event. Ngọn lửa chỉ là sinh lực. Khi bị chạm, Mây mất một ngọn lửa và đánh rơi `floor(50%)` số đom đóm đang mang.
+Tổng điểm game là tổng điểm của các Đêm đã thắng. Các số gameplay nằm tại [`game.contract.json`](../game.contract.json).
 
-## Headless — Test Contract v1.0
-
-Ví dụ chạy 600 tick, xuất snapshot mỗi 10 tick:
+## Headless — Test Contract v1.1
 
 ```bash
-node game/src/headless/cli.js --seed 1 --night 1 --scenario game/tests/fixtures/determinism-scenario.json --inputs game/tests/fixtures/determinism-inputs.json --ticks 600 --snapshot-every 10 --out output.jsonl
+node game/src/headless/cli.js --seed 1 --night 3 --scenario game/tests/fixtures/phase2-performance-scenario.json --ticks 21600 --snapshot-every 3600 --out output.jsonl
 ```
 
-Không truyền `--scenario` hoặc `--inputs` thì dùng màn mặc định/người chơi đứng yên. Logic chạy cố định 60 tick/giây, không mở cửa sổ, không cần GPU. File sai định dạng trả mã thoát 2.
+`--night` nhận `1`, `2`, `3`. Logic chạy cố định 60 tick/giây; pause chỉ tăng wall `tick`, còn `sim_tick`, timer, cooldown, TTL và spawn đứng yên. File scenario/input sai trả mã thoát 2.
 
 ## Kiểm chứng
 
@@ -57,20 +53,12 @@ npm --prefix game run verify
 npm --prefix game run build
 ```
 
-`verify` chạy unit/integration test rồi chạy cùng seed, scenario và inputs hai lần để so sánh output từng byte. CI cũng chạy hai lệnh này sau mỗi lần push.
-
-- Giả định, acceptance criteria và nhật ký AI: [`docs/notes/phase-1.md`](docs/notes/phase-1.md)
+- Spec, assumptions và acceptance criteria: [`docs/notes/phase-2.md`](docs/notes/phase-2.md)
+- Bằng chứng Phase 2: [`docs/proof/phase-2`](docs/proof/phase-2)
 - Bằng chứng Phase 1: [`docs/proof/phase-1`](docs/proof/phase-1)
-- Hướng dẫn agent: [`AGENTS.md`](AGENTS.md)
 
-## Sáng tạo của tôi
+Lần đo Phase 2: 21.600 tick Đêm 3 hoàn thành trong 0,096 giây; output hai lần chạy cùng seed giống hệt từng byte; bản thường đạt 119,32 FPS tại viewport 1280×720 bằng Chrome/D3D11.
 
-- Đảo sáng dần theo số Đèn Lồng Lớn đã thắp.
-- Mỗi đèn tạo một vòng ánh sáng an toàn mà Bóng Mực không thể đi vào.
-- Mây có nón lá cùng chiếc đèn lồng nhỏ phát sáng; toàn bộ cảnh quan low-poly được dựng bằng hình học thủ tục, không dùng asset ngoài.
+## Nội dung và nguồn
 
-Những chi tiết này chỉ thuộc lớp hiển thị hoặc dùng đúng thông số contract; chúng không thay đổi output headless ngoài các luật đã khai báo.
-
-## Giấy phép và nguồn
-
-Mã nguồn phát hành theo [MIT License](LICENSE). Nguồn công cụ và nội dung được ghi tại [CREDITS.md](CREDITS.md). Không có model, texture, nhạc hoặc âm thanh bên ngoài trong Phase 1.
+Game dùng Three.js và hình học thủ tục; âm thanh được tổng hợp bằng WebAudio, không dùng asset ngoài. Mã nguồn phát hành theo [MIT License](LICENSE), chi tiết tại [CREDITS.md](CREDITS.md).

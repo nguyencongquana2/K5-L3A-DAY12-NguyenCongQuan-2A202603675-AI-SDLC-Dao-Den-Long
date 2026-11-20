@@ -11,8 +11,9 @@
     "preview": "vite preview --host 0.0.0.0",
     "headless": "node src/headless/cli.js",
     "test": "node --test",
-    "verify:phase1": "npm test && node scripts/verify-determinism.js",
-    "verify": "npm run verify:phase1"
+    "verify:regression": "npm test && node scripts/verify-determinism.js",
+    "verify:performance": "node scripts/verify-performance.js",
+    "verify": "npm run verify:regression && npm run verify:performance"
   },
   "dependencies": {
     "three": "0.181.2"

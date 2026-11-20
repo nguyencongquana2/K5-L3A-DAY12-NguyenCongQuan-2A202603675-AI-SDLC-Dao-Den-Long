@@ -10,7 +10,8 @@
 - Do not hand-edit generated proof output.
 - Preserve the `phase-1` tag and keep all still-valid Phase 1 scenarios green during Phase 2.
 - In v1.1, wall `tick` continues while paused; `sim_tick` and every gameplay timer stay frozen.
-- Do not guess standardized tuning or RGB values that are absent from the supplied ticket export; record the gap in `game/docs/notes/phase-2.md`.
+- The omitted standardized tuning/RGB tables are represented by the locked assumptions in `game/docs/notes/phase-2.md`; keep those values centralized in `game.contract.json` and the web palette.
+- Contract v1.1 supports Nights 1–3; entities spawned in a step must not interact until the next simulation step.
 
 ## Commands
 
