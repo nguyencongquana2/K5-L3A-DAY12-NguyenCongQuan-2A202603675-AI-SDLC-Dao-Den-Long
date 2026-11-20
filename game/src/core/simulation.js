@@ -94,6 +94,7 @@ export class Simulation {
     this.lanterns = defaultLanterns(tuning.lantern_count_night1);
     this.motes = defaultMotes(this.rng);
     this.shades = defaultShades(this.rng);
+    this.drifters = [];
     this.charms = contractVersion === '1.1'
       ? getNightConfig(night).charms.map((charm) => ({ ...charm, available: true, respawnTicks: 0 }))
       : [];
@@ -106,10 +107,17 @@ export class Simulation {
     const allowedScenarioFields = new Set([
       'player', 'random_motes', 'random_shades', 'motes', 'shades', 'lanterns', 'time_left_s'
     ]);
+    if (this.contractVersion === '1.1') {
+      allowedScenarioFields.add('random_drifters');
+      allowedScenarioFields.add('drifters');
+    }
     for (const field of Object.keys(scenario)) {
       assert(allowedScenarioFields.has(field), `unknown scenario field: ${field}`);
     }
-    for (const flag of ['random_motes', 'random_shades']) {
+    const randomFlags = this.contractVersion === '1.1'
+      ? ['random_motes', 'random_shades', 'random_drifters']
+      : ['random_motes', 'random_shades'];
+    for (const flag of randomFlags) {
       if (scenario[flag] !== undefined) assert(typeof scenario[flag] === 'boolean', `${flag} must be boolean`);
     }
     if (scenario.player !== undefined) {
@@ -162,6 +170,43 @@ export class Simulation {
       });
     } else if (scenario.random_shades === false) {
       this.shades = [];
+    }
+
+    if (scenario.drifters !== undefined) {
+      assert(Array.isArray(scenario.drifters), 'scenario.drifters must be an array');
+      const ids = new Set();
+      const states = new Set(['idle', 'chase', 'flee', 'removed']);
+      this.drifters = scenario.drifters.map((drifter, index) => {
+        assert(drifter && typeof drifter === 'object', `scenario.drifters[${index}] must be an object`);
+        for (const field of Object.keys(drifter)) {
+          assert(
+            ['id', 'pos', 'state', 'stolen', 'state_ticks_left'].includes(field),
+            `unknown drifter field: ${field}`
+          );
+        }
+        validateVec(drifter.pos, `scenario.drifters[${index}].pos`);
+        const id = drifter.id ?? `D${index + 1}`;
+        const state = drifter.state ?? 'idle';
+        const stolen = drifter.stolen ?? 0;
+        const stateTicksLeft = drifter.state_ticks_left ?? 0;
+        assert(typeof id === 'string' && id.length > 0 && !ids.has(id), 'drifter ids must be unique non-empty strings');
+        assert(states.has(state), `invalid drifter state: ${state}`);
+        assert(Number.isInteger(stolen) && stolen >= 0, 'drifter.stolen must be a non-negative integer');
+        assert(Number.isInteger(stateTicksLeft) && stateTicksLeft >= 0, 'drifter.state_ticks_left must be a non-negative integer');
+        ids.add(id);
+        const idleAngle = this.rng.range(0, Math.PI * 2);
+        return {
+          id,
+          pos: copyVec(drifter.pos),
+          state,
+          stolen,
+          stateTicksLeft,
+          hasStolen: stolen > 0 || state === 'flee',
+          idleDirection: [Math.cos(idleAngle), Math.sin(idleAngle)],
+        };
+      });
+    } else if (scenario.random_drifters === false) {
+      this.drifters = [];
     }
 
     if (scenario.lanterns !== undefined) {
@@ -242,13 +287,25 @@ export class Simulation {
       charm.respawnTicks -= 1;
       if (charm.respawnTicks === 0) charm.available = true;
     }
+    for (const drifter of this.drifters) {
+      if (drifter.state !== 'flee' || drifter.stateTicksLeft <= 0) continue;
+      drifter.stateTicksLeft -= 1;
+      if (drifter.stateTicksLeft === 0) drifter.state = 'removed';
+    }
 
     this.movePlayer(current, rising('jump'), rising('dash'), events);
     this.collectMotes(events);
     this.collectCharms(events);
     if (rising('interact')) this.interact(events);
     if (rising('pulse')) this.pulse(events);
-    this.updateShades(events);
+    if (this.contractVersion === '1.1') {
+      this.updateDrifters();
+      this.updateShades(events, false);
+      this.resolveDrifterContacts(events);
+      this.resolveShadeContacts(events);
+    } else {
+      this.updateShades(events);
+    }
 
     this.simTick += 1;
     this.tick += 1;
@@ -368,6 +425,7 @@ export class Simulation {
     this.player.carried -= this.tuning.pulse_cost;
     this.player.pulseCooldownTicks = secondsToTicks(this.tuning.pulse_cooldown_s);
     const stunnedIds = [];
+    const drifterDropEvents = [];
 
     for (const shade of this.shades) {
       const distance = distanceXZ(this.player.pos, shade.pos);
@@ -389,11 +447,82 @@ export class Simulation {
       stunnedIds.push(shade.id);
     }
 
+    if (this.contractVersion === '1.1') {
+      for (const drifter of this.drifters) {
+        if (drifter.state === 'removed' || distanceXZ(this.player.pos, drifter.pos) > this.tuning.pulse_radius) continue;
+        if (drifter.state === 'chase') {
+          drifter.state = 'flee';
+          drifter.stateTicksLeft = 240;
+          drifter.hasStolen = true;
+        } else if (drifter.state === 'flee' && drifter.stolen > 0) {
+          const amount = drifter.stolen;
+          drifter.stolen = 0;
+          drifter.stateTicksLeft = 120;
+          for (let index = 0; index < amount; index += 1) {
+            this.dropSequence += 1;
+            this.motes.push({ id: `D${this.dropSequence}`, pos: copyVec(drifter.pos), kind: 'dropped' });
+          }
+          drifterDropEvents.push({ name: 'drifter_drop', data: { drifter_id: drifter.id, amount } });
+        }
+      }
+    }
+
     this.score += stunnedIds.length * this.tuning.score.per_stun;
     events.push({ name: 'pulse', data: { stunned_ids: stunnedIds } });
+    events.push(...drifterDropEvents);
   }
 
-  updateShades(events) {
+  updateDrifters() {
+    for (const drifter of this.drifters) {
+      if (drifter.state === 'removed') continue;
+      const dx = this.player.pos[0] - drifter.pos[0];
+      const dz = this.player.pos[2] - drifter.pos[2];
+      const distance = Math.hypot(dx, dz);
+
+      if (drifter.state === 'idle' || drifter.state === 'chase') {
+        drifter.state = this.player.carried >= 5 && distance <= 15 ? 'chase' : 'idle';
+      }
+
+      let directionX = drifter.idleDirection[0];
+      let directionZ = drifter.idleDirection[1];
+      let speed = 2;
+      if (drifter.state === 'chase' && distance > 0) {
+        directionX = dx / distance;
+        directionZ = dz / distance;
+        speed = 7;
+      } else if (drifter.state === 'flee' && distance > 0) {
+        directionX = -dx / distance;
+        directionZ = -dz / distance;
+        speed = 7;
+      }
+      drifter.pos[0] += (directionX * speed) / TICK_RATE;
+      drifter.pos[2] += (directionZ * speed) / TICK_RATE;
+    }
+  }
+
+  resolveDrifterContacts(events) {
+    const candidates = this.drifters
+      .filter((drifter) =>
+        drifter.state !== 'removed' &&
+        drifter.state !== 'flee' &&
+        !drifter.hasStolen &&
+        this.player.carried > 0 &&
+        distanceXZ(this.player.pos, drifter.pos) <= 1.2
+      )
+      .sort((a, b) => a.id.localeCompare(b.id));
+    for (const drifter of candidates) {
+      const amount = Math.min(3, this.player.carried);
+      if (amount <= 0) break;
+      this.player.carried -= amount;
+      drifter.stolen = amount;
+      drifter.hasStolen = true;
+      drifter.state = 'flee';
+      drifter.stateTicksLeft = 240;
+      events.push({ name: 'drifter_steal', data: { drifter_id: drifter.id, amount, carried: this.player.carried } });
+    }
+  }
+
+  updateShades(events, resolveContacts = true) {
     for (const shade of this.shades) {
       if (shade.stunTicks > 0) {
         shade.stunTicks -= 1;
@@ -412,11 +541,22 @@ export class Simulation {
       this.keepShadeOutsideSafeZones(shade);
 
       if (
+        resolveContacts &&
         this.player.invulnTicks === 0 &&
         distanceXZ(this.player.pos, shade.pos) <= this.tuning.shade_hit_radius
       ) {
         this.hitPlayer(events);
       }
+    }
+  }
+
+  resolveShadeContacts(events) {
+    const candidates = [...this.shades]
+      .filter((shade) => shade.state !== 'stunned')
+      .sort((a, b) => a.id.localeCompare(b.id));
+    for (const shade of candidates) {
+      if (this.player.invulnTicks > 0) break;
+      if (distanceXZ(this.player.pos, shade.pos) <= this.tuning.shade_hit_radius) this.hitPlayer(events);
     }
   }
 
@@ -521,6 +661,14 @@ export class Simulation {
         available: charm.available,
         respawn_s: round3(charm.respawnTicks / TICK_RATE),
       }));
+      snapshot.drifters = this.drifters
+        .filter((drifter) => drifter.state !== 'removed')
+        .map((drifter) => ({
+          id: drifter.id,
+          pos: vec(drifter.pos),
+          state: drifter.state,
+          stolen: drifter.stolen,
+        }));
     }
     return snapshot;
   }

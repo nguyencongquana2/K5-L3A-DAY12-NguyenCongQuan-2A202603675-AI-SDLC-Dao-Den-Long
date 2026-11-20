@@ -17,6 +17,8 @@ The supplied export references values that are not present in the text. Do not i
 3. Any exact Night names or Ông Đăng introduction text required by the original ticket.
 4. Night 2/3 player starts and whether their recurring shade schedules begin after one full interval.
 5. Dash direction is not stated; the implementation uses current movement direction, or the last facing direction while idle.
+6. The ticket does not define the “fog points” used to spawn drifters; automatic spawning stays disabled until those coordinates are supplied.
+7. Idle drifter pathing is not specified; scenario drifters use a seeded deterministic heading at 2 m/s.
 
 Work that does not depend on these values may proceed. Contract/tuning completion and visual palette sign-off remain blocked until the original tables are available.
 
@@ -71,4 +73,5 @@ Work that does not depend on these values may proceed. Contract/tuning completio
 | Standard score | Contract 1.1 scores deposited motes, pulse targets, lanterns and win bonus using the Ticket-02 formula | 24/24 tests; Phase 1 determinism remains 7,884 identical bytes | Contract 1.0 scoring remains isolated for regression |
 | Wind charm lifecycle | C1/C2 positions, pickup event, 600-tick buff, 7.2 m/s speed, paused timers and 2,700-tick respawn implemented | 27/27 tests; Phase 1 determinism remains 7,884 identical bytes; production build passes | No-cooldown dash effect waits for the dash slice |
 | Dash foundation | Rising-edge dash runs at 14 m/s for 12 ticks; active presses are ignored; pause freezes cooldown; charm removes cooldown | 31/31 tests; Phase 1 determinism remains 7,884 identical bytes | Standard cooldown is read from tuning and awaits the missing table; direction assumption is recorded above |
+| Drifter behavior | Scenario drifters implement idle/chase/flee, 7 m/s pursuit, steal-before-shade contact, pulse escape/drop, 240/120-tick removal timers and v1.1 events/snapshots | 35/35 tests; Phase 1 determinism remains 7,884 identical bytes | Automatic spawn waits for missing fog-point coordinates; seeded idle-heading assumption is recorded above |
 
