@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#100b24" />
+    <meta name="description" content="Đảo Đèn Lồng — game phiêu lưu 3D cổ tích" />
+    <title>Đảo Đèn Lồng</title>
+  </head>
+  <body>
+    <canvas id="game" aria-label="Khung cảnh game 3D"></canvas>
+
+    <div id="hud" class="hud hidden" aria-live="polite">
+      <section class="hud-card status-card">
+        <span id="flames" title="Sinh lực">🔥🔥🔥</span>
+        <span><b id="carried">0</b>/6 ✨</span>
+        <span><b id="lantern-count">0</b>/5 🏮</span>
+      </section>
+      <section class="hud-card score-card">
+        <span>Điểm <b id="score">0</b></span>
+        <span id="timer">05:00</span>
+      </section>
+      <div id="prompt" class="prompt hidden">Nhấn E để nạp ánh sáng</div>
+      <div id="toast" class="toast hidden"></div>
+      <div class="crosshair" aria-hidden="true"></div>
+    </div>
+
+    <main id="menu" class="overlay">
+      <section class="panel">
+        <p class="eyebrow">Đêm 1 · Đảo Bến</p>
+        <h1>Đảo Đèn Lồng</h1>
+        <p class="story">
+          Sương đen đã nuốt ánh sáng. Hãy giúp Mây gom đom đóm, thắp năm Đèn Lồng Lớn
+          và tránh những Bóng Mực đang rình trong đêm.
+        </p>
+        <div class="controls">
+          <span><kbd>WASD</kbd> Di chuyển</span>
+          <span><kbd>Chuột</kbd> Xoay camera</span>
+          <span><kbd>Space</kbd> Nhảy</span>
+          <span><kbd>E</kbd> Nạp đèn</span>
+          <span><kbd>Q</kbd> Tỏa sáng</span>
+        </div>
+        <button id="start" type="button">Bắt đầu hành trình</button>
+        <p class="hint">Nhấp vào màn chơi để khóa chuột · Esc để thả chuột</p>
+      </section>
+    </main>
+
+    <main id="result" class="overlay hidden">
+      <section class="panel result-panel">
+        <p id="result-eyebrow" class="eyebrow"></p>
+        <h2 id="result-title"></h2>
+        <p id="result-detail"></p>
+        <strong id="final-score"></strong>
+        <button id="restart" type="button">Chơi lại Đêm 1</button>
+      </section>
+    </main>
+
+    <script type="module" src="/src/web/main.js"></script>
+  </body>
+</html>
