@@ -1,6 +1,7 @@
 import { SeededRng } from './rng.js';
+import { TICK_RATE } from './constants.js';
 
-export const TICK_RATE = 60;
+export { TICK_RATE } from './constants.js';
 export const ISLAND_RADIUS = 38;
 export const JUMP_SPEED = 7;
 export const GRAVITY = 18;

@@ -15,6 +15,7 @@ The supplied export references values that are not present in the text. Do not i
 1. Complete standardized tuning table, including base carry/cost/radii, dash cooldown, and Night 2/3 durations.
 2. Complete standard RGB palette table.
 3. Any exact Night names or Ông Đăng introduction text required by the original ticket.
+4. Night 2/3 player starts and whether their recurring shade schedules begin after one full interval.
 
 Work that does not depend on these values may proceed. Contract/tuning completion and visual palette sign-off remain blocked until the original tables are available.
 
@@ -65,4 +66,5 @@ Work that does not depend on these values may proceed. Contract/tuning completio
 |---|---|---|---|
 | Requirements lock | Acceptance matrix created; missing exact tables recorded | Phase 1 baseline remains green | No values invented |
 | Clock and pause foundation | Wall tick, simulation tick, paused snapshots and pause/resume events implemented | 16/16 tests; Phase 1 determinism remains 7,884 identical bytes; production build passes | No tuning changes |
+| Night configuration | Standard terrain, lantern, spawn-point, launch-pad, charm, drifter and wind data captured for all three Nights | 21/21 tests; Phase 1 determinism remains 7,884 identical bytes | Unspecified Night 2/3 starts and first recurring shade tick remain unset |
 
