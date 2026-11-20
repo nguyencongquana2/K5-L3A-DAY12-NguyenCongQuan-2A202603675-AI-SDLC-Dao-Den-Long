@@ -7,6 +7,7 @@
   --violet: #2d174e;
   --gold: #ffcb62;
   --paper: #fff4d0;
+  --warning: #ff5a5f;
 }
 
 * { box-sizing: border-box; }
@@ -57,7 +58,8 @@ button, kbd { font: inherit; }
 .status-card { right: 22px; }
 .hud-card b { color: var(--gold); }
 #timer { min-width: 64px; color: #f0d7ff; font-size: 1.2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-#timer.urgent { color: #ff6b61; animation: timer-pulse .7s infinite alternate; }
+#timer.urgent { color: var(--warning); animation: timer-pulse .7s infinite alternate; }
+body.distinguishable-palette { --warning: #ffffff; }
 
 @keyframes timer-pulse { to { transform: scale(1.09); text-shadow: 0 0 15px #ff3f34; } }
 
@@ -235,6 +237,8 @@ button.ghost {
 .settings label { display: flex; justify-content: space-between; color: #e6d9ef; }
 .settings output { color: var(--gold); font-variant-numeric: tabular-nums; }
 .settings input { width: 100%; accent-color: var(--gold); }
+.settings .toggle-setting { align-items: center; margin-top: 8px; }
+.settings .toggle-setting input { width: 22px; height: 22px; }
 .settings button { margin-top: 12px; }
 
 .hint { margin: 16px 0 0; color: #897a99; font-size: .72rem; }

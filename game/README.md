@@ -21,24 +21,24 @@ Mở địa chỉ Vite in ra terminal, thường là `http://localhost:5173`. Bu
 | Chuột | Xoay camera |
 | `Space` | Nhảy |
 | `Shift` | Lướt 14 m/s trong 12 tick |
-| `E` | Nạp đom đóm vào đèn gần nhất |
+| `E` | Thắp, thắp lại hoặc châm dầu cho đèn gần nhất có thể nhận đom đóm |
 | `Q` | Tỏa sáng |
 | `Esc` / `P` | Tạm dừng / tiếp tục |
 
-Mây có 3 Ngọn Lửa và mang tối đa 10 đom đóm. Tỏa sáng tốn 2 đom đóm. Bùa Gió tăng tốc chạy lên 7,2 m/s trong 600 tick và bỏ hồi chiêu Lướt. Thua sẽ chơi lại Đêm hiện tại; thắng Đêm 3 mở màn hình Bình Minh và tổng điểm.
+Mây có 3 Ngọn Lửa. Sức chứa bắt đầu ở 10, tăng 2 sau mỗi lần thắp thành công và tối đa 20. Đèn tiêu hao dầu, có thể tắt và cần được châm; Bóng Mực có thể hút dầu của đèn yếu. Mục tiêu là sống tới bình minh và giữ sáng ít nhất 60% số đèn. Tỏa sáng tốn 2 đom đóm. Bùa Gió tăng tốc chạy lên 7,2 m/s trong 600 tick và bỏ hồi chiêu Lướt.
 
-## Điểm chuẩn Phase 2
+## Điểm chuẩn Phase 3
 
 | Sự kiện | Điểm |
 |---|---:|
-| Nạp một đom đóm | 10 |
-| Thắp một Đèn Lồng Lớn | 100 |
-| Mỗi Bóng Mực trúng Tỏa Sáng | 5 |
-| Bonus thắng | `floor(giây còn lại) × 2 + Ngọn Lửa × 50` |
+| Mỗi đom đóm nạp vào đèn | 5 |
+| Thắp lần đầu / thắp lại | 100 / 40 |
+| Bóng Mực trúng Tỏa Sáng | 5; nếu đang hút dầu thì tổng 15 |
+| Bình minh khi thắng | Mỗi đèn sáng: `50 + floor(dầu)`; mỗi Ngọn Lửa: 50 |
 
 Tổng điểm game là tổng điểm của các Đêm đã thắng. Các số gameplay nằm tại [`game.contract.json`](../game.contract.json).
 
-## Headless — Test Contract v1.1
+## Headless — Test Contract v1.2
 
 ```bash
 node game/src/headless/cli.js --seed 1 --night 3 --scenario game/tests/fixtures/phase2-performance-scenario.json --ticks 21600 --snapshot-every 3600 --out output.jsonl
@@ -53,11 +53,12 @@ npm --prefix game run verify
 npm --prefix game run build
 ```
 
-- Spec, assumptions và acceptance criteria: [`docs/notes/phase-2.md`](docs/notes/phase-2.md)
+- Quyết định thiết kế, assumptions và acceptance criteria: [`docs/notes/phase-3.md`](docs/notes/phase-3.md)
+- Bằng chứng Phase 3: [`docs/proof/phase-3`](docs/proof/phase-3)
 - Bằng chứng Phase 2: [`docs/proof/phase-2`](docs/proof/phase-2)
 - Bằng chứng Phase 1: [`docs/proof/phase-1`](docs/proof/phase-1)
 
-Lần đo Phase 2: 21.600 tick Đêm 3 hoàn thành trong 0,096 giây; output hai lần chạy cùng seed giống hệt từng byte; bản thường đạt 119,32 FPS tại viewport 1280×720 bằng Chrome/D3D11.
+Phase 3 giữ deterministic core 60 Hz và toàn bộ regression Phase 1–2. Kết quả verify mới nhất được ghi trong [`docs/proof/phase-3/README.md`](docs/proof/phase-3/README.md).
 
 ## Nội dung và nguồn
 

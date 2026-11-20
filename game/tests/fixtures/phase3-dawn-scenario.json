@@ -1,0 +1,15 @@
+{
+  "time_left_s": 0.016666666666666666,
+  "random_motes": false,
+  "random_shades": false,
+  "random_drifters": false,
+  "charms": [],
+  "player": { "flames": 3, "successful_lights": 2 },
+  "lanterns": [
+    { "id": "L1", "lit": true, "fuel": 100, "ever_lit": true },
+    { "id": "L2", "lit": true, "fuel": 80, "ever_lit": true },
+    { "id": "L3", "lit": true, "fuel": 60, "ever_lit": true },
+    { "id": "L4", "lit": false, "ever_lit": true },
+    { "id": "L5", "lit": false, "ever_lit": false }
+  ]
+}

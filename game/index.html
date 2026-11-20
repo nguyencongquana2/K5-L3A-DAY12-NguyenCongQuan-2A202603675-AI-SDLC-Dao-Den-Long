@@ -25,13 +25,13 @@
       </section>
       <section class="mote-panel" aria-label="Đom đóm đang mang">
         <div id="mote-bar" class="mote-bar"></div>
-        <span><b id="carried">0</b>/10</span>
+        <span><b id="carried">0</b>/<b id="capacity">10</b></span>
       </section>
       <section class="cooldowns">
         <span id="dash-cooldown">⇧ Lướt · Sẵn sàng</span>
         <span id="pulse-cooldown">Q Tỏa sáng · Sẵn sàng</span>
       </section>
-      <div id="prompt" class="prompt hidden">E — Nạp ánh sáng (<span id="deposit-progress">0/10</span>)</div>
+      <div id="prompt" class="prompt hidden">E — <span id="interaction-label">Nạp ánh sáng</span> (<span id="deposit-progress">0/10</span>)</div>
       <div id="lantern-arrow" class="lantern-arrow hidden" aria-label="Hướng tới đèn chưa sáng">➤</div>
       <div id="toast" class="toast hidden"></div>
       <div class="crosshair" aria-hidden="true"></div>
@@ -42,8 +42,8 @@
         <p class="eyebrow">Ba Đêm · Một Bình Minh</p>
         <h1>Đảo Đèn Lồng</h1>
         <p class="story">
-          Sương đen đã nuốt ánh sáng. Hãy giúp Mây gom đom đóm, thắp năm Đèn Lồng Lớn
-          và tránh những Bóng Mực đang rình trong đêm.
+          Sương đen đã nuốt ánh sáng. Hãy giúp Mây gom đom đóm, giữ Đèn Lồng Lớn còn dầu
+          và bảo vệ đủ ánh sáng cho tới bình minh.
         </p>
         <div class="controls">
           <span><kbd>WASD</kbd> Di chuyển</span>
@@ -89,6 +89,10 @@
             <output id="sensitivity-value" for="sensitivity">100%</output>
           </label>
           <input id="sensitivity" type="range" min="40" max="200" step="5" value="100" />
+          <label class="toggle-setting" for="distinguishable-palette">
+            <span>Bảng màu dễ phân biệt</span>
+            <input id="distinguishable-palette" type="checkbox" />
+          </label>
           <button id="close-settings" type="button">Quay lại</button>
         </div>
       </section>
