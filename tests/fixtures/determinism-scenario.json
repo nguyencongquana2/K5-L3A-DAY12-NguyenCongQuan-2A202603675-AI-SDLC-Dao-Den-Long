@@ -1,0 +1,9 @@
+{
+  "player": { "pos": [0, 0, 0], "carried": 2, "flames": 3 },
+  "random_motes": false,
+  "random_shades": false,
+  "motes": [[0, 0, 1], [0, 0, 4]],
+  "shades": [{ "id": "S-test", "pos": [4, 0, 0] }],
+  "lanterns": [{ "id": "L1", "pos": [0, 0, 3], "deposited": 1 }],
+  "time_left_s": 20
+}
